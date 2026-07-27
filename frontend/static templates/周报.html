@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>周报｜人事报表智能体</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="logo"><div class="mk">人</div><div><b>人事报表智能体</b><span>HR Report Agent</span></div></div>
+    <nav class="nav">
+      <a href="工作台.html"><span class="i">▣</span> 工作台</a>
+      <a href="日报.html"><span class="i">▤</span> 日报</a>
+      <a class="active" href="周报.html"><span class="i">▦</span> 周报</a>
+      <a href="计算日志.html"><span class="i">✓</span> 计算日志</a>
+      <a href="归档.html"><span class="i">▢</span> 归档</a>
+      <a href="口径与设置.html"><span class="i">⚙</span> 口径与设置</a>
+    </nav>
+    <div class="foot">数据均为脱敏假数据<br>确定性 · 可追溯 · 不臆测</div>
+  </aside>
+
+  <main class="main">
+    <div class="head">
+      <div><h1>周报 · 员工数增减周报</h1>
+        <div class="sub">统计窗口 2026-06-22 ~ 06-25（06-26 周五放假，按节假日前最后工作日调整）· 报告时点 06-25</div></div>
+      <div style="display:flex;gap:9px"><a class="btn ghost" href="计算日志.html">查看计算日志</a><a class="btn primary" href="#">导出 Excel</a></div>
+    </div>
+
+    <div class="card" style="margin-bottom:22px">
+      <div class="cb" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span class="auto-chip"><span class="dot"></span>本周报为最后工作日自动生成</span>
+        <span class="muted" style="font-size:12.5px;margin-left:6px">选择周次：</span>
+        <div class="seg"><a class="on" href="#">06-22~06-25</a><a href="#">06-15~06-19</a><a href="#">06-08~06-12</a></div>
+      </div>
+    </div>
+
+    <!-- Sheet2 -->
+    <div class="card">
+      <div class="ch"><h2>Sheet2 · 主体 × 事业部</h2><span class="meta">在职总数 = 正式 + 实习生 + 劳务；前三大项目按在职人数倒序</span></div>
+      <div class="cb">
+        <div class="tblwrap">
+        <table class="tbl">
+          <thead>
+            <tr><th>主体</th><th>事业部</th><th class="r">在职总数</th><th class="r">正式</th><th class="r">实习生</th><th class="r">劳务</th><th class="r">本周入职</th><th class="r">本周离职</th><th>部门前三大项目</th><th>项目人数</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>主体A</td><td>BU_A</td><td class="r">152</td><td class="r">120</td><td class="r">22</td><td class="r">10</td><td class="r">2</td><td class="r">1</td><td class="fx">ALPHA / BETA / GAMMA</td><td class="fx">40 / 28 / 19</td></tr>
+            <tr><td>主体A</td><td>BU_B</td><td class="r">138</td><td class="r">110</td><td class="r">18</td><td class="r">10</td><td class="r">1</td><td class="r">0</td><td class="fx">DELTA / EPSILON / ZETA</td><td class="fx">33 / 25 / 15</td></tr>
+            <tr><td>主体A</td><td>BU_C</td><td class="r">96</td><td class="r">80</td><td class="r">12</td><td class="r">4</td><td class="r">0</td><td class="r">1</td><td class="fx">ETA / THETA / IOTA</td><td class="fx">22 / 17 / 9</td></tr>
+            <tr><td>主体A</td><td>BU_D</td><td class="r">110</td><td class="r">88</td><td class="r">14</td><td class="r">8</td><td class="r">1</td><td class="r">0</td><td class="fx">KAPPA / LAMBDA / MU</td><td class="fx">30 / 21 / 14</td></tr>
+            <tr><td>主体A</td><td>BU_E</td><td class="r">84</td><td class="r">70</td><td class="r">9</td><td class="r">5</td><td class="r">0</td><td class="r">0</td><td class="fx">NU / XI / OMICRON</td><td class="fx">24 / 16 / 11</td></tr>
+            <tr><td>主体A</td><td>BU_F</td><td class="r">73</td><td class="r">60</td><td class="r">8</td><td class="r">5</td><td class="r">1</td><td class="r">1</td><td class="fx">PI / RHO / SIGMA</td><td class="fx">20 / 14 / 8</td></tr>
+            <tr><td>主体A</td><td>BU_G</td><td class="r">130</td><td class="r">104</td><td class="r">18</td><td class="r">8</td><td class="r">0</td><td class="r">0</td><td class="fx">TAU / UPSILON / PHI</td><td class="fx">35 / 26 / 18</td></tr>
+            <tr><td>主体A</td><td>BU_H</td><td class="r">90</td><td class="r">74</td><td class="r">10</td><td class="r">6</td><td class="r">1</td><td class="r">0</td><td class="fx">CHI / PSI / OMEGA</td><td class="fx">23 / 17 / 10</td></tr>
+            <tr class="derive"><td>—</td><td class="nm">合计</td><td class="r">873</td><td class="r">706</td><td class="r">111</td><td class="r">56</td><td class="r">6</td><td class="r">3</td><td class="fx">各事业部逐行校验</td><td class="fx">706+111+56=873 ✓</td></tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sheet1 -->
+    <div class="card">
+      <div class="ch"><h2>Sheet1 · 成本中心 × 项目</h2><span class="meta">按关键词/合并规则归集项目（PROJECT_* 占位）</span></div>
+      <div class="cb">
+        <table class="tbl">
+          <thead><tr><th>成本中心</th><th>项目</th><th class="r">在职人数</th><th class="r">本周入职</th><th class="r">本周离职</th></tr></thead>
+          <tbody>
+            <tr><td>FAKE_CC_A</td><td>PROJECT_ALPHA_GROUP</td><td class="r">68</td><td class="r">2</td><td class="r">1</td></tr>
+            <tr><td>FAKE_CC_B</td><td>PROJECT_BETA_GROUP</td><td class="r">53</td><td class="r">1</td><td class="r">0</td></tr>
+            <tr><td>FAKE_CC_C</td><td>PROJECT_GAMMA_GROUP</td><td class="r">41</td><td class="r">0</td><td class="r">1</td></tr>
+            <tr><td>FAKE_CC_D</td><td>PROJECT_DELTA_GROUP</td><td class="r">47</td><td class="r">1</td><td class="r">0</td></tr>
+            <tr class="derive"><td>—</td><td class="nm">合计</td><td class="r">209</td><td class="r">4</td><td class="r">2</td></tr>
+          </tbody>
+        </table>
+        <div style="margin-top:12px;font-size:12px;color:var(--muted)">本周入职/离职均为<b>人数计数</b>（非姓名名单）；在职总数 = 离职日期为空或 &gt; 本周最后工作日，从最新人员表动态重算。</div>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

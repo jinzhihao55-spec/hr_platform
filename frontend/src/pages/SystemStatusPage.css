@@ -1,0 +1,23 @@
+.system-page { min-width: 0; padding: 26px 34px 48px; }
+.system-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.system-header h1 { margin: 0; font-size: 21px; }
+.system-header p { margin: 5px 0 0; color: var(--muted); font-size: 11.5px; }
+.system-retry, .system-settings-link { min-height: 34px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 11px; border: 1px solid #d5deea; border-radius: 7px; background: #fff; color: #40536b; font: inherit; font-size: 11.5px; font-weight: 700; text-decoration: none; cursor: pointer; }
+.system-retry:disabled { cursor: wait; opacity: .65; }
+.system-summary, .system-connection-error { display: flex; align-items: flex-start; gap: 10px; padding: 13px 14px; border-radius: 8px; }
+.system-summary { margin-bottom: 18px; }
+.system-summary.ready { border: 1px solid #cfe5d9; background: var(--ok-soft); color: #337758; }
+.system-summary.blocked, .system-connection-error { border: 1px solid #edc8c2; background: var(--bad-soft); color: #8f3f38; }
+.system-summary strong, .system-connection-error strong { font-size: 12.5px; }
+.system-summary p, .system-connection-error p { margin: 2px 0 0; font-size: 10.5px; }
+.system-connection-error { margin-bottom: 12px; }
+.system-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.system-component { min-width: 0; display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 8px; padding: 13px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.system-component.ok > svg { color: var(--ok); }
+.system-component.failed { border-color: #ead4d0; }
+.system-component.failed > svg { color: var(--bad); }
+.system-component h2 { margin: 0; font-size: 12.5px; }
+.system-component p { margin: 3px 0 0; color: var(--muted); font-size: 10.5px; }
+.system-settings-link { margin-top: 14px; }
+.system-retry:focus-visible, .system-settings-link:focus-visible { outline: 3px solid rgba(47, 107, 176, .22); outline-offset: 2px; }
+@media (max-width: 720px) { .system-page { padding: 72px 14px 32px; } .system-header { align-items: flex-start; flex-direction: column; } .system-grid { grid-template-columns: 1fr; } }

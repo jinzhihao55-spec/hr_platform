@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>计算日志｜人事报表智能体</title>
+<link rel="stylesheet" href="app.css">
+<style>
+  .trace{border:1px solid var(--line);border-radius:10px;padding:0;margin-bottom:12px;overflow:hidden}
+  .trace>summary{list-style:none;cursor:pointer;padding:12px 15px;display:flex;align-items:center;gap:11px;background:#fafbfd}
+  .trace>summary::-webkit-details-marker{display:none}
+  .trace[open]>summary{border-bottom:1px solid var(--line)}
+  .trace .row{font-size:11.5px;font-weight:700;color:var(--brand);background:var(--brand-soft);padding:2px 9px;border-radius:6px;flex:none}
+  .trace .ti{font-weight:600;font-size:13px}
+  .trace .tv{margin-left:auto;font-weight:700;font-variant-numeric:tabular-nums}
+  .trace.derive .row{color:#7b4fb0;background:#f3ecfa}
+  .tbody{padding:13px 16px;font-size:12.5px;line-height:1.7}
+  .tbody dt{color:var(--faint);font-size:11px;text-transform:uppercase;letter-spacing:.4px;margin-top:9px}
+  .tbody dd{margin:1px 0 0;font-family:ui-monospace,Menlo,monospace;font-size:12px}
+  .tbody dd.plain{font-family:inherit}
+  .ok{color:var(--ok)} .pend{color:var(--pend)}
+  .chk{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:12.5px}
+  .chk:last-child{border:0}
+  .chk .b{width:17px;height:17px;border-radius:50%;background:var(--ok);color:#fff;display:grid;place-items:center;font-size:10px;flex:none}
+  .chk .hard{margin-left:auto;font-size:10px;color:var(--bad);border:1px solid #e7c0bb;padding:1px 6px;border-radius:5px}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="logo"><div class="mk">人</div><div><b>人事报表智能体</b><span>HR Report Agent</span></div></div>
+    <nav class="nav">
+      <a href="工作台.html"><span class="i">▣</span> 工作台</a>
+      <a href="日报.html"><span class="i">▤</span> 日报</a>
+      <a href="周报.html"><span class="i">▦</span> 周报</a>
+      <a class="active" href="计算日志.html"><span class="i">✓</span> 计算日志</a>
+      <a href="归档.html"><span class="i">▢</span> 归档</a>
+      <a href="口径与设置.html"><span class="i">⚙</span> 口径与设置</a>
+    </nav>
+    <div class="foot">数据均为脱敏假数据<br>确定性 · 可追溯 · 不臆测</div>
+  </aside>
+
+  <main class="main">
+    <div class="head">
+      <div><h1>计算日志</h1>
+        <div class="sub">日报 2026-06-25 · 每行可追溯到输入行、公式、中间值与校验 · 数据落库</div></div>
+      <a class="btn ghost" href="日报.html">← 返回日报</a>
+    </div>
+
+    <div class="card" style="margin-bottom:22px">
+      <div class="cb" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span class="muted" style="font-size:12.5px">选择报表：</span>
+        <div class="seg"><a class="on" href="#">日报 06-25</a><a href="#">周报 06-22~25</a><a href="#">日报 06-24</a></div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 300px;gap:22px;align-items:start">
+      <!-- traces -->
+      <div class="card">
+        <div class="ch"><h2>逐行计算 trace</h2><span class="meta">点击展开每一行的取数与算法</span></div>
+        <div class="cb">
+
+          <details class="trace" open>
+            <summary><span class="row">Row3</span><span class="ti">今日离职</span><span class="tv">1</span></summary>
+            <div class="tbody">
+              <dt>输入源</dt><dd class="plain">人员表（快照 06-24 → 06-25 diff）</dd>
+              <dt>命中筛选</dt><dd class="plain">纳入口径(正式/长期实习/短期实习/劳务) 且 离职日期=2026-06-25 或 今日首次可见的过去离职</dd>
+              <dt>命中明细</dt><dd class="plain">EMP_0007（脱敏）离职日期 06-25 → 计入；EMP_0012 离职日期 06-25 但昨日已可见 → 去重剔除</dd>
+              <dt>公式</dt><dd>COUNT(命中) = 1</dd>
+              <dt>中间值</dt><dd>候选 2 · 去重剔除 1</dd>
+              <dt>最终值</dt><dd>1</dd>
+              <dt>流向</dt><dd>→ Row9 = 13 + 1 = 14；→ Row14、在岗时长</dd>
+              <dt>校验</dt><dd class="ok plain">✓ Row7 = Row2 − Row3 自检通过</dd>
+            </div>
+          </details>
+
+          <details class="trace derive">
+            <summary><span class="row">Row6</span><span class="ti">合计提出离职（派生）</span><span class="tv">3</span></summary>
+            <div class="tbody">
+              <dt>公式</dt><dd>Row6 = Row4 + Row5 = 2 + 1</dd>
+              <dt>左/右值</dt><dd>Row4=2（主动·离职报表）, Row5=1（被动·OA）</dd>
+              <dt>最终值</dt><dd>3</dd>
+              <dt>校验</dt><dd class="ok plain">✓ 公式链断言 True</dd>
+            </div>
+          </details>
+
+          <details class="trace">
+            <summary><span class="row">Row8</span><span class="ti">MTD 入职（链式）</span><span class="tv">28</span></summary>
+            <div class="tbody">
+              <dt>输入源</dt><dd class="plain">昨日已验收日报（数据库基线） + 今日 Row2</dd>
+              <dt>公式</dt><dd>Row8 = 昨日Row8 + 今日Row2 = 25 + 3</dd>
+              <dt>最终值</dt><dd>28</dd>
+              <dt>校验</dt><dd class="ok plain">✓ 不跳过未验收基线；与人员表本月入职交叉核对一致</dd>
+            </div>
+          </details>
+
+          <details class="trace">
+            <summary><span class="row">Row30</span><span class="ti">Release 数-截至月底</span><span class="tv">4</span></summary>
+            <div class="tbody">
+              <dt>输入源</dt><dd class="plain">OA 协议签署（按单号 diff） + 数据库基线</dd>
+              <dt>命中筛选</dt><dd class="plain">今日首次计入 且 LWD 在本月</dd>
+              <dt>命中明细</dt><dd class="plain">REL2026060007 LWD=2026-06-30（人工确认补充）→ 本月，计入</dd>
+              <dt>公式</dt><dd>Row30 = 昨日Row30(3) + 新增本月Release(1)</dd>
+              <dt>最终值</dt><dd>4</dd>
+              <dt>人工留痕</dt><dd class="plain">LWD 由对话确认：2026-06-30</dd>
+            </div>
+          </details>
+
+          <details class="trace derive">
+            <summary><span class="row">Row40</span><span class="ti">合计（派生）</span><span class="tv">35</span></summary>
+            <div class="tbody">
+              <dt>公式</dt><dd>Row40 = Row37 + Row38 + Row39 = 28 + 5 + 2</dd>
+              <dt>命中明细</dt><dd class="plain">Row38/39 取招聘数据合计行；与逐行求和交叉校验：合计 9 vs 逐行 8 → 人工确认取「合计行」</dd>
+              <dt>最终值</dt><dd>35</dd>
+              <dt>校验</dt><dd class="ok plain">✓ Row18(35) == Row40(35) 成立</dd>
+            </div>
+          </details>
+
+          <p class="muted" style="font-size:12px;margin:6px 0 0">完整日志覆盖 Row2–Row40（空白行标注“空白行-不填”）、在岗时长逐 BU、12 项校验与全部人工决策留痕。</p>
+        </div>
+      </div>
+
+      <!-- validations -->
+      <div class="card">
+        <div class="ch"><h2>校验清单</h2><span class="meta">12 / 12</span></div>
+        <div class="cb">
+          <div class="chk"><span class="b">✓</span> 输入源完整</div>
+          <div class="chk"><span class="b">✓</span> 员工类型过滤 <span class="hard">★</span></div>
+          <div class="chk"><span class="b">✓</span> Row2/3 去重比对</div>
+          <div class="chk"><span class="b">✓</span> Row4 流程单去重</div>
+          <div class="chk"><span class="b">✓</span> Row5 OA 单号 diff</div>
+          <div class="chk"><span class="b">✓</span> Release LWD 判断</div>
+          <div class="chk"><span class="b">✓</span> Row31 名单有效性</div>
+          <div class="chk"><span class="b">✓</span> 招聘取数 Row37=Row8</div>
+          <div class="chk"><span class="b">✓</span> 公式链校验 <span class="hard">★</span></div>
+          <div class="chk"><span class="b">✓</span> 在岗时长=B10=Row14 <span class="hard">★</span></div>
+          <div class="chk"><span class="b">✓</span> 样式校验</div>
+          <div class="chk"><span class="b">✓</span> 归档校验</div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

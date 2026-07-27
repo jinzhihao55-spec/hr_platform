@@ -1,0 +1,25 @@
+.archive-page { min-width: 0; padding: 26px 34px 48px; }
+.archive-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.archive-header h1 { margin: 0; font-size: 21px; }
+.archive-header p { margin: 5px 0 0; color: var(--muted); font-size: 11.5px; }
+.archive-filters { display: inline-flex; padding: 3px; border: 1px solid #dce3ec; border-radius: 8px; background: #fff; }
+.archive-filters button { min-height: 28px; padding: 4px 10px; border: 0; border-radius: 5px; background: transparent; color: #657287; font: inherit; font-size: 11px; cursor: pointer; }
+.archive-filters button.active { background: #eaf1f9; color: var(--brand); font-weight: 700; }
+.archive-error { margin-bottom: 12px; padding: 9px 11px; border: 1px solid #efc9c4; border-radius: 7px; background: var(--bad-soft); color: #913e37; font-size: 11.5px; }
+.archive-state { min-height: 220px; display: flex; align-items: center; justify-content: center; gap: 7px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--muted); font-size: 11.5px; }
+.archive-table-scroll { overflow: auto; border: 1px solid var(--line); border-radius: 8px; background: #fff; box-shadow: var(--shadow); }
+.archive-table { width: 100%; min-width: 850px; border-collapse: collapse; font-size: 11.5px; }
+.archive-table th, .archive-table td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+.archive-table th { background: #f8fafc; color: #687589; font-size: 10.5px; }
+.archive-kind, .archive-current { display: inline-flex; padding: 2px 6px; border-radius: 5px; font-size: 10px; font-weight: 700; }
+.archive-kind.daily { background: var(--brand-soft); color: var(--brand); }
+.archive-kind.weekly { background: #eef2f6; color: #5e6f85; }
+.archive-current { background: #f1f3f6; color: #7a8696; }
+.archive-current.current { background: var(--ok-soft); color: #337758; }
+.archive-run-link, .archive-actions button { display: inline-flex; align-items: center; gap: 5px; color: #4c6078; font: inherit; font-size: 10.5px; text-decoration: none; }
+.archive-actions { display: flex; gap: 6px; }
+.archive-actions button { min-height: 29px; padding: 4px 8px; border: 1px solid #d9e1eb; border-radius: 6px; background: #fff; cursor: pointer; }
+.archive-actions button:disabled { cursor: wait; opacity: .55; }
+.archive-actions button:hover:not(:disabled), .archive-run-link:hover { color: var(--brand); }
+.archive-filters button:focus-visible, .archive-actions button:focus-visible, .archive-run-link:focus-visible { outline: 3px solid rgba(47, 107, 176, .22); outline-offset: 2px; }
+@media (max-width: 720px) { .archive-page { padding: 72px 14px 32px; } .archive-header { align-items: flex-start; flex-direction: column; } }

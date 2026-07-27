@@ -1,0 +1,81 @@
+/* 人事报表智能体 · 共享样式 (app.css) */
+:root{
+  --bg:#f5f7fa; --panel:#fff; --ink:#1d2533; --muted:#7b8696; --faint:#9aa4b2;
+  --line:#eaeef3; --brand:#2f6bb0; --brand-soft:#eaf1f9;
+  --ok:#39a06e; --ok-soft:#e9f6ef; --pend:#c08a2e; --pend-soft:#fbf2e1; --bad:#c8554b; --bad-soft:#fbecea;
+  --shadow:0 1px 2px rgba(20,30,50,.04),0 6px 18px rgba(20,30,50,.04); --r:12px;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",Segoe UI,sans-serif;
+  background:var(--bg);color:var(--ink);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:var(--brand)}
+.app{display:grid;grid-template-columns:216px 1fr;min-height:100vh}
+
+/* sidebar */
+.side{background:#13243c;color:#aebccf;padding:22px 14px;display:flex;flex-direction:column;gap:3px}
+.logo{display:flex;align-items:center;gap:10px;padding:4px 8px 18px;margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,.07)}
+.logo .mk{width:30px;height:30px;border-radius:8px;background:#2f6bb0;display:grid;place-items:center;color:#fff;font-weight:700}
+.logo b{color:#fff;font-size:14.5px} .logo span{display:block;font-size:11px;color:#7589a3}
+.nav a{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:8px;color:#aebccf;text-decoration:none;font-size:13.5px}
+.nav a .i{width:16px;text-align:center;opacity:.8}
+.nav a.active{background:#1e3a5c;color:#fff}
+.nav a:hover:not(.active){background:rgba(255,255,255,.04)}
+.nav a .sig{margin-left:auto;width:8px;height:8px;border-radius:50%;background:var(--pend);animation:pulse 1.3s infinite}
+.side .foot{margin-top:auto;font-size:11px;color:#647b97;padding:8px;line-height:1.6}
+
+/* main + header */
+.main{padding:26px 34px 44px}
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:22px;flex-wrap:wrap}
+.head h1{font-size:19px;margin:0}
+.head .sub{color:var(--muted);font-size:12.5px;margin-top:4px}
+.auto-chip{display:inline-flex;align-items:center;gap:7px;background:var(--ok-soft);color:var(--ok);font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:999px}
+.auto-chip .dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+.need-pill{display:inline-flex;align-items:center;gap:7px;background:var(--pend-soft);color:var(--pend);font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:999px;text-decoration:none}
+.need-pill .dot{width:7px;height:7px;border-radius:50%;background:currentColor;animation:pulse 1.3s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* cards */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.card+.card{margin-top:22px}
+.ch{display:flex;align-items:center;justify-content:space-between;padding:15px 18px 0;gap:12px;flex-wrap:wrap}
+.ch h2{font-size:14px;margin:0}
+.ch .meta{font-size:11.5px;color:var(--faint)}
+.cb{padding:14px 18px 18px}
+
+/* buttons + tags */
+.btn{display:inline-block;border:none;border-radius:9px;padding:10px 16px;font-size:13.5px;font-weight:600;cursor:pointer;text-decoration:none}
+.btn.primary{background:var(--brand);color:#fff} .btn.primary:hover{background:#27598f}
+.btn.ghost{background:#fff;color:var(--brand);border:1px solid var(--line)} .btn.ghost:hover{background:var(--brand-soft)}
+.tag{font-size:11px;padding:2px 8px;border-radius:5px;font-weight:600}
+.tag.d{background:var(--brand-soft);color:var(--brand)}
+.tag.w{background:#eef2f7;color:#62748c}
+.tag.ok{background:var(--ok-soft);color:var(--ok)}
+.tag.pend{background:var(--pend-soft);color:var(--pend)}
+
+/* segmented selector (日期/周次) */
+.seg{display:flex;gap:7px;flex-wrap:wrap}
+.seg a{font-size:12.5px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 13px;color:var(--ink);text-decoration:none}
+.seg a:hover{background:var(--brand-soft)}
+.seg a.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+
+/* generic table */
+table.tbl{width:100%;border-collapse:collapse;font-size:12.8px}
+table.tbl th,table.tbl td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.tbl thead th{color:var(--muted);font-weight:600;font-size:11.5px;background:#fafbfd;position:sticky;top:0}
+table.tbl td.r,table.tbl th.r{text-align:right;font-variant-numeric:tabular-nums}
+table.tbl tr.derive td{background:#f6f9fc}
+table.tbl tr.derive .nm{color:var(--brand);font-weight:600}
+table.tbl .rn{color:var(--faint);font-size:11px;width:40px}
+table.tbl .fx{font-size:11px;color:var(--muted);font-family:ui-monospace,Menlo,monospace}
+table.tbl tr:hover td{background:#f3f7fb}
+.tblwrap{max-height:560px;overflow:auto;border:1px solid var(--line);border-radius:10px}
+.tblwrap::-webkit-scrollbar{width:9px;height:9px}.tblwrap::-webkit-scrollbar-thumb{background:#dde3ec;border-radius:8px}
+
+/* small helpers */
+.muted{color:var(--muted)} .right{margin-left:auto}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;box-shadow:var(--shadow)}
+.kpi .l{font-size:12px;color:var(--muted)} .kpi .v{font-size:25px;font-weight:700;margin-top:5px} .kpi .dd{font-size:11.5px;color:var(--faint);margin-top:3px}
+.up{color:var(--ok)} .down{color:var(--bad)}
+
+@media(max-width:980px){.app{grid-template-columns:1fr}.side{display:none}.kpis{grid-template-columns:1fr 1fr}}

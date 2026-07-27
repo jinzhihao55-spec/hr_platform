@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>归档｜人事报表智能体</title>
+<link rel="stylesheet" href="app.css">
+<style>
+  .fold{border:1px solid var(--line);border-radius:10px;margin-bottom:12px;overflow:hidden}
+  .fold>summary{list-style:none;cursor:pointer;padding:13px 15px;display:flex;align-items:center;gap:11px;background:#fafbfd;font-weight:600;font-size:13px}
+  .fold>summary::-webkit-details-marker{display:none}
+  .fold>summary .path{color:var(--faint);font-weight:400;font-size:11.5px;font-family:ui-monospace,Menlo,monospace}
+  .fold[open]>summary{border-bottom:1px solid var(--line)}
+  .file{display:flex;align-items:center;gap:11px;padding:10px 16px;border-bottom:1px solid var(--line);font-size:12.8px}
+  .file:last-child{border:0}
+  .file .ic{width:26px;height:26px;border-radius:6px;display:grid;place-items:center;font-size:12px;flex:none;background:var(--brand-soft);color:var(--brand)}
+  .file .sz{margin-left:auto;color:var(--faint);font-size:11.5px}
+  .file a{margin-left:8px}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="logo"><div class="mk">人</div><div><b>人事报表智能体</b><span>HR Report Agent</span></div></div>
+    <nav class="nav">
+      <a href="工作台.html"><span class="i">▣</span> 工作台</a>
+      <a href="日报.html"><span class="i">▤</span> 日报</a>
+      <a href="周报.html"><span class="i">▦</span> 周报</a>
+      <a href="计算日志.html"><span class="i">✓</span> 计算日志</a>
+      <a class="active" href="归档.html"><span class="i">▢</span> 归档</a>
+      <a href="口径与设置.html"><span class="i">⚙</span> 口径与设置</a>
+    </nav>
+    <div class="foot">数据均为脱敏假数据<br>确定性 · 可追溯 · 不臆测</div>
+  </aside>
+
+  <main class="main">
+    <div class="head">
+      <div><h1>归档</h1>
+        <div class="sub">每日材料、日报/周报、计算日志、执行说明按日期归档 · project/日报(周报)/YYYY-MM-DD/</div></div>
+      <div class="seg"><a class="on" href="#">全部</a><a href="#">日报</a><a href="#">周报</a></div>
+    </div>
+
+    <div class="card">
+      <div class="cb">
+
+        <details class="fold" open>
+          <summary>📁 2026-06-25 <span class="tag d">日报</span><span class="tag w">周报</span><span class="path right">project/日报/2026-06-25/</span></summary>
+          <div class="file"><span class="ic">▤</span> 员工数增减情况日报_20260625.xlsx <span class="sz">42 KB</span><a href="日报.html">打开</a></div>
+          <div class="file"><span class="ic">▦</span> 员工数增减周报_20260622-25.xlsx <span class="sz">38 KB</span><a href="周报.html">打开</a></div>
+          <div class="file"><span class="ic">✓</span> 计算日志_2026-06-25.md <span class="sz">26 KB</span><a href="计算日志.html">打开</a></div>
+          <div class="file"><span class="ic">📝</span> 执行说明_2026-06-25.md <span class="sz">7 KB</span><a href="#">打开</a></div>
+          <div class="file"><span class="ic">📥</span> 输入材料/（人员表·离职·OA·招聘） <span class="sz">4 文件</span><a href="#">展开</a></div>
+        </details>
+
+        <details class="fold">
+          <summary>📁 2026-06-24 <span class="tag d">日报</span><span class="path right">project/日报/2026-06-24/</span></summary>
+          <div class="file"><span class="ic">▤</span> 员工数增减情况日报_20260624.xlsx <span class="sz">42 KB</span><a href="#">打开</a></div>
+          <div class="file"><span class="ic">✓</span> 计算日志_2026-06-24.md <span class="sz">25 KB</span><a href="#">打开</a></div>
+          <div class="file"><span class="ic">📥</span> 输入材料/ <span class="sz">4 文件</span><a href="#">展开</a></div>
+        </details>
+
+        <details class="fold">
+          <summary>📁 2026-06-23 <span class="tag d">日报</span><span class="path right">project/日报/2026-06-23/</span></summary>
+          <div class="file"><span class="ic">▤</span> 员工数增减情况日报_20260623.xlsx <span class="sz">41 KB</span><a href="#">打开</a></div>
+          <div class="file"><span class="ic">✓</span> 计算日志_2026-06-23.md <span class="sz">24 KB</span><a href="#">打开</a></div>
+          <div class="file"><span class="ic">📥</span> 输入材料/ <span class="sz">4 文件</span><a href="#">展开</a></div>
+        </details>
+
+        <details class="fold">
+          <summary>📁 2026-06-19 <span class="tag d">日报</span><span class="tag w">周报</span><span class="path right">project/日报/2026-06-19/</span></summary>
+          <div class="file"><span class="ic">▤</span> 员工数增减情况日报_20260619.xlsx <span class="sz">42 KB</span><a href="#">打开</a></div>
+          <div class="file"><span class="ic">▦</span> 员工数增减周报_20260615-19.xlsx <span class="sz">37 KB</span><a href="#">打开</a></div>
+          <div class="file"><span class="ic">✓</span> 计算日志_2026-06-19.md <span class="sz">26 KB</span><a href="#">打开</a></div>
+          <div class="file"><span class="ic">📥</span> 输入材料/ <span class="sz">4 文件</span><a href="#">展开</a></div>
+        </details>
+
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

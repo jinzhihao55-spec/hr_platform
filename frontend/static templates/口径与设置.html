@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>口径与设置｜人事报表智能体</title>
+<link rel="stylesheet" href="app.css">
+<style>
+  .cfg{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:stretch}
+  @media(max-width:780px){.cfg{grid-template-columns:1fr}}
+  .cfg .card{margin:0;display:flex;flex-direction:column}
+  .cfg .card .cb{flex:1}
+  .pillset{display:flex;gap:7px;flex-wrap:wrap}
+  .p{font-size:12px;padding:4px 10px;border-radius:6px;font-weight:600}
+  .p.in{background:var(--ok-soft);color:var(--ok)} .p.ex{background:var(--bad-soft);color:var(--bad)}
+  .kv{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--line);font-size:12.8px}
+  .kv:last-child{border:0} .kv .k{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="logo"><div class="mk">人</div><div><b>人事报表智能体</b><span>HR Report Agent</span></div></div>
+    <nav class="nav">
+      <a href="工作台.html"><span class="i">▣</span> 工作台</a>
+      <a href="日报.html"><span class="i">▤</span> 日报</a>
+      <a href="周报.html"><span class="i">▦</span> 周报</a>
+      <a href="计算日志.html"><span class="i">✓</span> 计算日志</a>
+      <a href="归档.html"><span class="i">▢</span> 归档</a>
+      <a class="active" href="口径与设置.html"><span class="i">⚙</span> 口径与设置</a>
+    </nav>
+    <div class="foot">数据均为脱敏假数据<br>确定性 · 可追溯 · 不臆测</div>
+  </aside>
+
+  <main class="main">
+    <div class="head">
+      <div><h1>口径与设置</h1>
+        <div class="sub">确定性计算所依赖的字典与规则 · 由业务确认后纳入配置，禁止散落硬编码</div></div>
+      <a class="btn primary" href="#">保存配置</a>
+    </div>
+
+    <div class="cfg">
+      <!-- 行1 -->
+      <div class="card">
+        <div class="ch"><h2>员工类型纳入口径</h2><span class="meta">★ 硬阻断</span></div>
+        <div class="cb">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:8px">纳入</div>
+          <div class="pillset"><span class="p in">正式员工</span><span class="p in">长期实习生</span><span class="p in">短期实习生</span><span class="p in">劳务人员</span></div>
+          <div style="font-size:12px;color:var(--muted);margin:12px 0 8px">排除</div>
+          <div class="pillset"><span class="p ex">P-合作伙伴</span><span class="p ex">V-供应商</span><span class="p ex">委托安置</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><h2>离职方式 / 流程状态枚举</h2><span class="meta">Row4/5/31 判定</span></div>
+        <div class="cb">
+          <div class="kv"><span class="k">主动</span><span>→ Row4（今日提出·主动）</span></div>
+          <div class="kv"><span class="k">协商一致</span><span>→ 按被动 Release 处理</span></div>
+          <div class="kv"><span class="k">被动</span><span>→ Row5 / Release</span></div>
+          <div class="kv"><span class="k">流程状态·有效</span><span>审批中 / 通过 → 进 Row31</span></div>
+          <div class="kv"><span class="k">流程状态·剔除</span><span>经理拒绝 / 作废</span></div>
+        </div>
+      </div>
+
+      <!-- 行2 -->
+      <div class="card">
+        <div class="ch"><h2>节假日 / 调休表</h2><span class="meta">先自查 → 联网核对 → 用户确认</span></div>
+        <div class="cb">
+          <div class="kv"><span class="k">2026-06-26 周五</span><span>放假（端午调休）</span></div>
+          <div class="kv"><span class="k">本周最后工作日</span><span>2026-06-25 周四</span></div>
+          <div class="kv"><span class="k">周报触发</span><span>06-25 自动生成</span></div>
+          <div class="kv"><span class="k">来源</span><span class="muted">国务院办公厅放假安排</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><h2>公式链 / 校验规则</h2><span class="meta">发布前必过</span></div>
+        <div class="cb" style="font-size:12.5px;line-height:1.95;color:var(--muted)">
+          <div class="kv"><span class="k">Row6</span><span>Row4 + Row5</span></div>
+          <div class="kv"><span class="k">Row7</span><span>Row2 − Row3</span></div>
+          <div class="kv"><span class="k">Row12 / Row17</span><span>入 − 离 − 转正 + 微软调整</span></div>
+          <div class="kv"><span class="k">Row33</span><span>Row30 + Row31 + Row32</span></div>
+          <div class="kv"><span class="k">Row37 / Row40</span><span>Row8 ; Row37+38+39（=Row18）</span></div>
+        </div>
+      </div>
+
+      <!-- 行3 -->
+      <div class="card">
+        <div class="ch"><h2>员工状态字典</h2><span class="meta">日期为主 · 状态交叉校验</span></div>
+        <div class="cb">
+          <div class="kv"><span class="k">在职</span><span>离职日期为空 或 &gt; 报告日</span></div>
+          <div class="kv"><span class="k">离职</span><span>离职日期 ≤ 报告日</span></div>
+          <div class="kv"><span class="k">矛盾处理</span><span>日期与状态不符 → 阻断核对</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><h2>工号 ↔ OA 员工标识对照表</h2><span class="meta">跨源关联</span></div>
+        <div class="cb">
+          <div class="kv"><span class="k">EMP_0007</span><span>人员001</span></div>
+          <div class="kv"><span class="k">EMP_0012</span><span>人员002</span></div>
+          <div class="kv"><span class="k">缺映射</span><span>按 姓名 + LWD 弱匹配·标“待确认”</span></div>
+        </div>
+      </div>
+
+      <!-- 行4 -->
+      <div class="card">
+        <div class="ch"><h2>LLM / 数据源</h2><span class="meta">可替换 · 不硬编码 key</span></div>
+        <div class="cb">
+          <div class="kv"><span class="k">权威源</span><span>结构化 Excel（截图仅旁证）</span></div>
+          <div class="kv"><span class="k">计算与中间值</span><span>全部落数据库</span></div>
+          <div class="kv"><span class="k">LLM 角色</span><span>交互入口 / 占位 / 校对</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><h2>微软项目清单</h2><span class="meta">Row11/16 · 暂不涉及</span></div>
+        <div class="cb">
+          <div class="kv"><span class="k">默认</span><span>0（不从快照自动推断）</span></div>
+          <div class="kv"><span class="k">前置依赖</span><span>微软项目清单 + 项目调整确认表</span></div>
+          <div class="kv"><span class="k">计入条件</span><span>业务确认调整事件后</span></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

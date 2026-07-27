@@ -1,0 +1,42 @@
+# 说明：使用 >= 版本下限（非精确 pin），让 pip 为你的 Python 版本选择
+# 有预编译 wheel 的最新兼容版，避免从源码编译（尤其 pydantic-core / numpy）。
+# 推荐 Python 3.11 / 3.12；3.14 过新时本文件同样适用。
+
+# ---- Web 框架 ----
+fastapi>=0.111
+uvicorn[standard]>=0.30
+python-multipart>=0.0.9
+
+# ---- 配置 / 校验 ----
+pydantic>=2.7
+pydantic-settings>=2.3
+
+# ---- 数据处理 ----
+pandas>=2.2
+numpy>=1.26
+openpyxl>=3.1
+xlrd>=2.0.1
+python-dateutil>=2.9
+
+# ---- 数据库（MySQL 8.0+）----
+SQLAlchemy>=2.0.30
+PyMySQL>=1.1
+cryptography>=42.0        # PyMySQL 认证所需
+
+# ---- 缓存 / 队列（Redis）----
+redis>=5.0
+
+# ---- LLM（OpenAI 协议兼容客户端；默认 DeepSeek，图像解析走独立配置的视觉模型）----
+openai>=1.35              # 密钥仅从环境读取
+
+# ---- SQL 安全校验（必需：sql_guard 的语法解析 + 表白名单校验依赖它，
+#      未安装时 validate_sql 会直接拒绝所有 SQL，fail-closed）----
+sqlglot>=25.0
+
+# ---- 图像识别（用于上传截图/图片格式的报表）----
+# 已不再使用 PaddleOCR 本地识别（安装/依赖不稳定、对表单+表格混合版面识别不可靠）；
+# 图像统一走视觉 LLM（见 .env 的 LLM_VISION_* 配置），未配置时直接报错并提示改传 Excel。
+Pillow>=10.0
+
+# ---- 其他 ----
+chinese-calendar>=1.10    # 中国法定节假日/调休判断（可离线）

@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工作台｜人事报表智能体</title>
+<style>
+  :root{
+    --bg:#f5f7fa; --panel:#fff; --ink:#1d2533; --muted:#7b8696; --faint:#9aa4b2;
+    --line:#eaeef3; --brand:#2f6bb0; --brand-soft:#eaf1f9;
+    --ok:#39a06e; --ok-soft:#e9f6ef; --pend:#c08a2e; --pend-soft:#fbf2e1;
+    --shadow:0 1px 2px rgba(20,30,50,.04),0 6px 18px rgba(20,30,50,.04); --r:12px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",Segoe UI,sans-serif;
+    background:var(--bg);color:var(--ink);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .app{display:grid;grid-template-columns:216px 1fr;min-height:100vh}
+
+  /* sidebar */
+  .side{background:#13243c;color:#aebccf;padding:22px 14px;display:flex;flex-direction:column;gap:3px}
+  .logo{display:flex;align-items:center;gap:10px;padding:4px 8px 18px;margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,.07)}
+  .logo .mk{width:30px;height:30px;border-radius:8px;background:#2f6bb0;display:grid;place-items:center;color:#fff;font-weight:700}
+  .logo b{color:#fff;font-size:14.5px} .logo span{display:block;font-size:11px;color:#7589a3}
+  .nav a{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:8px;color:#aebccf;text-decoration:none;font-size:13.5px}
+  .nav a .i{width:16px;text-align:center;opacity:.8}
+  .nav a.active{background:#1e3a5c;color:#fff}
+  .nav a:hover:not(.active){background:rgba(255,255,255,.04)}
+  .nav a .sig{margin-left:auto;width:8px;height:8px;border-radius:50%;background:var(--pend);animation:pulse 1.3s infinite}
+  .side .foot{margin-top:auto;font-size:11px;color:#647b97;padding:8px;line-height:1.6}
+
+  /* main */
+  .main{padding:26px 34px 44px}
+  .head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:22px;flex-wrap:wrap}
+  .head h1{font-size:19px;margin:0}
+  .head .sub{color:var(--muted);font-size:12.5px;margin-top:4px}
+  .auto-chip{display:inline-flex;align-items:center;gap:7px;background:var(--ok-soft);color:var(--ok);font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:999px}
+  .auto-chip .dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+  .need-pill{display:inline-flex;align-items:center;gap:7px;background:var(--pend-soft);color:var(--pend);font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:999px;text-decoration:none}
+  .need-pill .dot{width:7px;height:7px;border-radius:50%;background:currentColor;animation:pulse 1.3s infinite}
+  .need-pill.ok{background:var(--ok-soft);color:var(--ok)} .need-pill.ok .dot{animation:none}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+  .stack{display:flex;flex-direction:column;gap:22px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+  .ch{display:flex;align-items:center;justify-content:space-between;padding:15px 18px 0}
+  .ch h2{font-size:14px;margin:0}
+  .ch .meta{font-size:11.5px;color:var(--faint)}
+  .cb{padding:14px 18px 18px}
+
+  /* drop zone */
+  .drop{border:1.5px dashed #c4d2e4;border-radius:10px;background:#fafcff;padding:15px 16px;display:flex;gap:13px;align-items:center;cursor:pointer;transition:.15s}
+  .drop:hover,.drop.over{border-color:var(--brand);background:var(--brand-soft)}
+  .drop .ic{width:38px;height:38px;border-radius:9px;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center;font-size:19px;flex:none}
+  .drop b{font-size:13px} .drop p{margin:2px 0 0;font-size:11.5px;color:var(--muted);line-height:1.5}
+
+  /* recognized list */
+  .flist{margin-top:14px;display:flex;flex-direction:column}
+  .frow{display:flex;align-items:center;gap:12px;padding:11px 2px;border-top:1px solid var(--line)}
+  .frow:first-child{border-top:0}
+  .frow .ic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-size:14px;flex:none;background:var(--ok-soft);color:var(--ok)}
+  .frow.reuse .ic{background:#eef2f7;color:#62748c}
+  .frow .nm{flex:1;min-width:0}
+  .frow .nm b{font-size:13px;font-weight:600}
+  .frow .nm span{display:block;font-size:11.5px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .src{font-size:11px;font-weight:600;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .src.new{background:var(--ok-soft);color:var(--ok)}
+  .src.reuse{background:#eef2f7;color:#62748c}
+  .swap{font-size:11.5px;color:var(--brand);text-decoration:none;white-space:nowrap}
+
+  /* generate */
+  .btn{display:block;width:100%;border:none;border-radius:9px;padding:12px;font-size:14px;font-weight:600;cursor:pointer}
+  .btn.primary{background:var(--brand);color:#fff} .btn.primary:hover{background:#27598f}
+  .btn.primary:disabled{background:#aeb9c7;cursor:default}
+  .note{display:flex;align-items:center;gap:9px;margin-top:13px;font-size:12.5px;color:var(--muted)}
+  .note .b{width:18px;height:18px;border-radius:50%;background:var(--ok-soft);color:var(--ok);display:grid;place-items:center;font-size:11px;flex:none}
+  .note.auto .b{background:var(--brand-soft);color:var(--brand)}
+  .note.miss .b{background:var(--pend-soft);color:var(--pend)}
+  .note a{color:var(--brand);text-decoration:none;font-weight:600;margin-left:4px;white-space:nowrap}
+
+  /* recent (full width) */
+  .fullw{margin-top:22px}
+  .rlist{max-height:200px;overflow:auto}
+  .rlist::-webkit-scrollbar{width:8px}.rlist::-webkit-scrollbar-thumb{background:#dde3ec;border-radius:8px}
+  .rrow{display:flex;align-items:center;gap:12px;padding:10px 2px;border-top:1px solid var(--line);font-size:12.5px}
+  .rrow:first-child{border-top:0}
+  .rrow .dt{color:var(--muted);width:50px;flex:none}
+  .tag{font-size:11px;padding:2px 8px;border-radius:5px;font-weight:600}
+  .tag.d{background:var(--brand-soft);color:var(--brand)} .tag.w{background:#eef2f7;color:#62748c}
+  .rrow .cc{flex:1;color:var(--ink)}
+  .rrow a{margin-left:auto;color:var(--brand);text-decoration:none}
+
+  /* conversation — height synced to left column via JS */
+  .chat{display:flex;flex-direction:column;overflow:hidden;height:440px}
+  .chat .ch{flex:none}
+  .chat .ch .cnt{background:var(--pend-soft);color:var(--pend);font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px}
+  .msgs{padding:16px 18px;display:flex;flex-direction:column;gap:12px;flex:1;min-height:0;overflow:auto}
+  .msg{display:flex;gap:9px;max-width:88%}
+  .msg .av{width:26px;height:26px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:10.5px;font-weight:700}
+  .msg.bot .av{background:var(--brand);color:#fff}
+  .msg.me{margin-left:auto;flex-direction:row-reverse}
+  .msg.me .av{background:#e6eaf1;color:var(--muted)}
+  .bubble{padding:9px 12px;border-radius:11px;font-size:12.8px;line-height:1.55}
+  .msg.bot .bubble{background:#f3f6fa;border-top-left-radius:3px}
+  .msg.me .bubble{background:var(--brand);color:#fff;border-top-right-radius:3px}
+  .bubble .ref{font-size:10.5px;color:var(--pend);font-weight:700;display:block;margin-bottom:2px}
+  .chips{display:flex;gap:7px;flex-wrap:wrap;padding:2px 18px 12px;flex:none}
+  .chip2{font-size:12px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 11px;cursor:pointer;color:var(--brand)}
+  .chip2:hover{background:var(--brand-soft)}
+  .composer{display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--line);flex:none}
+  .composer input{flex:1;border:1px solid var(--line);border-radius:9px;padding:9px 12px;font-size:12.8px;font-family:inherit}
+  .composer input:focus{outline:none;border-color:var(--brand)}
+  .composer button{border:none;background:var(--brand);color:#fff;border-radius:9px;padding:0 16px;font-weight:600;cursor:pointer;font-size:13px}
+
+  @media(max-width:980px){.app{grid-template-columns:1fr}.side{display:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="logo"><div class="mk">人</div><div><b>人事报表智能体</b><span>HR Report Agent</span></div></div>
+    <nav class="nav">
+      <a class="active" href="工作台.html"><span class="i">▣</span> 工作台</a>
+      <a href="日报.html"><span class="i">▤</span> 日报 <span class="sig"></span></a>
+      <a href="周报.html"><span class="i">▦</span> 周报</a>
+      <a href="计算日志.html"><span class="i">✓</span> 计算日志</a>
+      <a href="归档.html"><span class="i">▢</span> 归档</a>
+      <a href="口径与设置.html"><span class="i">⚙</span> 口径与设置</a>
+    </nav>
+    <div class="foot">数据均为脱敏假数据<br>确定性 · 可追溯 · 不臆测</div>
+  </aside>
+
+  <main class="main">
+    <div class="head">
+      <div>
+        <h1>工作台</h1>
+        <div class="sub">报告日期 2026-06-25（周四）· 基线 2026-06-24 · 本周 06-22 ~ 06-26（06-26 周五放假）</div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <a class="need-pill" id="needPill" href="#conv"><span class="dot"></span>待你确认 1 项</a>
+        <span class="auto-chip"><span class="dot"></span>本周最后工作日 · 周报今日自动生成</span>
+      </div>
+    </div>
+
+    <div class="stack">
+        <!-- 输入 -->
+        <div class="card">
+          <div class="ch"><h2>输入</h2><span class="meta">一次拖入 · 自动识别归类</span></div>
+          <div class="cb">
+            <label class="drop" id="drop">
+              <div class="ic">⤓</div>
+              <div><b>把全部文件一起拖到这里，或点击批量选择</b>
+              <p>按 文件名 / Sheet 名 / 表头 自动识别并写入数据库。人员表为快照、可沿用旧版；离职 / OA / 招聘通常每日更新。</p></div>
+            </label>
+            <div class="flist">
+              <div class="frow reuse"><div class="ic">↻</div><div class="nm"><b>人员表</b><span>人员表_20260624.xlsx · 312 行 · 快照可沿用</span></div><span class="src reuse">沿用 06-24</span><a class="swap" href="#">重新上传</a></div>
+              <div class="frow"><div class="ic">✓</div><div class="nm"><b>离职人员报表</b><span>离职报表_20260625.xlsx · 8 行</span></div><span class="src new">今日上传</span></div>
+              <div class="frow"><div class="ic">✓</div><div class="nm"><b>协议签署 / OA</b><span>OA协议_20260625.xlsx · 5 行</span></div><span class="src new">今日上传</span></div>
+              <div class="frow"><div class="ic">✓</div><div class="nm"><b>招聘数据</b><span>招聘数据_20260625.xlsx · 7 行</span></div><span class="src new">今日上传</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 生成 -->
+        <div class="card">
+          <div class="ch"><h2>生成</h2><span class="meta">AI 检索数据库 → 计算 → 导出 Excel</span></div>
+          <div class="cb">
+            <button class="btn primary pending" id="genBtn">⚡ 生成今日日报</button>
+            <div class="note miss" id="missNote"><span class="b">!</span><span><b>1 项待确认</b> · 在对话中确认后才会发布。<a href="#conv">去确认 →</a></span></div>
+            <div class="note auto" id="wkNote"><span class="b">↻</span><span>周报将随日报<b>自动生成</b>（今日为本周最后工作日），并同步产出计算日志。</span></div>
+            <div class="note"><span class="b">✓</span><span>12 项校验已通过；每行取数与中间值均存入数据库，计算日志可逐行追溯。</span></div>
+          </div>
+        </div>
+
+      <!-- 对话 -->
+      <div class="card chat" id="conv">
+        <div class="ch"><h2>对话</h2><span class="cnt">1 项待确认</span></div>
+        <div class="msgs" id="msgs">
+          <div class="msg bot"><div class="av">人</div><div class="bubble">四类输入已就绪（人员表沿用 06-24 快照；离职 / OA / 招聘为今日数据）。今日为本周最后工作日，生成日报时会自动产出周报。有 1 项需要你确认，确认前我不会臆测填值。</div></div>
+          <div class="msg bot"><div class="av">人</div><div class="bubble"><span class="ref">Row30 · 待确认</span>OA 单 REL2026060007 缺最后工作日 LWD，已只计入 Row5、未计入本月 Release。该 LWD 是哪天？</div></div>
+          <div class="msg me"><div class="av">你</div><div class="bubble">2026-06-30</div></div>
+          <div class="msg bot"><div class="av">人</div><div class="bubble">已记录 LWD=2026-06-30（本月）→ 计入 Row30，写入计算日志。还剩 1 项 ↓</div></div>
+          <div class="msg bot"><div class="av">人</div><div class="bubble"><span class="ref">Row38/39 · 待确认</span>招聘数据「合计行(9)」与逐行求和(8)不一致，按哪个取数？</div></div>
+        </div>
+        <div class="chips">
+          <span class="chip2">按合计行取数</span>
+          <span class="chip2">按逐行求和</span>
+          <span class="chip2">查看差异明细</span>
+        </div>
+        <div class="composer"><input id="cinp" placeholder="回复，或问：为什么 Row9 = 6 ？"><button id="csend">发送</button></div>
+      </div>
+
+      <!-- 最近输出 -->
+      <div class="card">
+      <div class="ch"><h2>最近输出</h2><span class="meta">归档于 project/…/YYYY-MM-DD/</span></div>
+      <div class="cb" style="padding-top:6px">
+        <div class="rlist">
+          <div class="rrow"><span class="dt">06-24</span><span class="tag d">日报</span><span class="cc">今日净增 +2</span><a href="#">查看</a></div>
+          <div class="rrow"><span class="dt">06-23</span><span class="tag d">日报</span><span class="cc">今日净增 −1</span><a href="#">查看</a></div>
+          <div class="rrow"><span class="dt">06-20</span><span class="tag d">日报</span><span class="cc">今日净增 0</span><a href="#">查看</a></div>
+          <div class="rrow"><span class="dt">06-19</span><span class="tag w">周报</span><span class="cc">在职合计 1,204（自动生成）</span><a href="#">查看</a></div>
+          <div class="rrow"><span class="dt">06-19</span><span class="tag d">日报</span><span class="cc">今日净增 +1</span><a href="#">查看</a></div>
+          <div class="rrow"><span class="dt">06-18</span><span class="tag d">日报</span><span class="cc">今日净增 +3</span><a href="#">查看</a></div>
+          <div class="rrow"><span class="dt">06-17</span><span class="tag d">日报</span><span class="cc">今日净增 −2</span><a href="#">查看</a></div>
+          <div class="rrow"><span class="dt">06-16</span><span class="tag d">日报</span><span class="cc">今日净增 0</span><a href="#">查看</a></div>
+          <div class="rrow"><span class="dt">06-13</span><span class="tag w">周报</span><span class="cc">在职合计 1,198（自动生成）</span><a href="#">查看</a></div>
+          <div class="rrow"><span class="dt">06-13</span><span class="tag d">日报</span><span class="cc">今日净增 +2</span><a href="#">查看</a></div>
+        </div>
+      </div>
+    </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  const chat=document.getElementById('conv');
+
+  // 批量拖入（演示拖拽态）
+  const drop=document.getElementById('drop');
+  ['dragover','dragenter'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.add('over');}));
+  ['dragleave','drop'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.remove('over');}));
+
+  // 沿用昨日 → 重新上传
+  document.querySelectorAll('.frow.reuse .swap').forEach(a=>a.addEventListener('click',ev=>{
+    ev.preventDefault();const r=a.closest('.frow');r.classList.remove('reuse');
+    r.querySelector('.ic').textContent='✓';
+    const span=r.querySelector('.nm span');span.textContent=span.textContent.replace('20260624','20260625').replace(' · 快照可沿用','');
+    const s=r.querySelector('.src');s.className='src new';s.textContent='今日上传';a.remove();
+  }));
+
+  // 对话
+  const msgs=document.getElementById('msgs'), cinp=document.getElementById('cinp'), genBtn=document.getElementById('genBtn');
+  const add=(role,html)=>{const m=document.createElement('div');m.className='msg '+role;
+    m.innerHTML='<div class="av">'+(role==='me'?'你':'人')+'</div><div class="bubble">'+html+'</div>';
+    msgs.appendChild(m);msgs.scrollTop=msgs.scrollHeight;};
+  const send=()=>{const v=cinp.value.trim();if(!v)return;add('me',v);cinp.value='';
+    setTimeout(()=>add('bot','收到，已按确定性规则处理并记入计算日志。'),420);};
+  document.getElementById('csend').addEventListener('click',send);
+  cinp.addEventListener('keydown',e=>{if(e.key==='Enter')send();});
+  document.querySelectorAll('.chip2').forEach(c=>c.addEventListener('click',()=>{
+    add('me',c.textContent);
+    setTimeout(()=>{add('bot','已采用「'+c.textContent+'」，差异记入计算日志。当前 0 项待确认，可发布。');
+      document.querySelector('.cnt').textContent='0 项待确认';
+      const np=document.getElementById('needPill');np.classList.add('ok');np.innerHTML='<span class="dot"></span>已全部确认';
+      const sig=document.querySelector('.nav .sig');if(sig)sig.remove();
+      const mn=document.getElementById('missNote');if(mn)mn.remove();
+      genBtn.classList.remove('pending');
+    },420);
+  }));
+
+  // 生成日报 → 周报自动跟随
+  const wkNote=document.getElementById('wkNote');
+  genBtn.addEventListener('click',()=>{
+    if(genBtn.classList.contains('pending')){chat.scrollIntoView({behavior:'smooth'});return;}
+    genBtn.textContent='⏳ 正在生成…';genBtn.disabled=true;
+    setTimeout(()=>{genBtn.textContent='✓ 日报已生成（12/12 通过）';
+      wkNote.querySelector('span:last-child').innerHTML='周报已<b>自动生成</b>并归档（含周报计算日志）。';
+      wkNote.querySelector('.b').textContent='✓';},1000);
+  });
+</script>
+</body>
+</html>

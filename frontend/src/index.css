@@ -1,0 +1,57 @@
+/* ===== 全局变量 ===== */
+:root {
+  --bg: #f5f7fa;
+  --panel: #fff;
+  --ink: #1d2533;
+  --muted: #7b8696;
+  --faint: #9aa4b2;
+  --line: #eaeef3;
+  --brand: #2f6bb0;
+  --brand-soft: #eaf1f9;
+  --ok: #39a06e;
+  --ok-soft: #e9f6ef;
+  --pend: #c08a2e;
+  --pend-soft: #fbf2e1;
+  --bad: #c8554b;
+  --bad-soft: #fbecea;
+  --shadow: 0 1px 2px rgba(20, 30, 50, .04), 0 6px 18px rgba(20, 30, 50, .04);
+  --r: 12px;
+}
+
+/* ===== 全局重置 ===== */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", Segoe UI, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== 布局 ===== */
+.app {
+  display: grid;
+  grid-template-columns: 216px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.app > main {
+  min-width: 0;
+}
+
+@media (max-width: 980px) {
+  .app {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .app > main {
+    padding-top: 72px;
+  }
+  .side {
+    display: none;
+  }
+}

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>日报｜人事报表智能体</title>
+<link rel="stylesheet" href="app.css">
+<style>
+  .layout{display:grid;grid-template-columns:1fr 320px;gap:22px;align-items:start}
+  @media(max-width:980px){.layout{grid-template-columns:1fr}}
+  .blank td{background:#fcfdfe;color:var(--faint);font-style:italic}
+  .sec td{background:#eef2f7;font-weight:700;color:#42536a}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="logo"><div class="mk">人</div><div><b>人事报表智能体</b><span>HR Report Agent</span></div></div>
+    <nav class="nav">
+      <a href="工作台.html"><span class="i">▣</span> 工作台</a>
+      <a class="active" href="日报.html"><span class="i">▤</span> 日报</a>
+      <a href="周报.html"><span class="i">▦</span> 周报</a>
+      <a href="计算日志.html"><span class="i">✓</span> 计算日志</a>
+      <a href="归档.html"><span class="i">▢</span> 归档</a>
+      <a href="口径与设置.html"><span class="i">⚙</span> 口径与设置</a>
+    </nav>
+    <div class="foot">数据均为脱敏假数据<br>确定性 · 可追溯 · 不臆测</div>
+  </aside>
+
+  <main class="main">
+    <div class="head">
+      <div><h1>日报 · 员工数增减情况日报</h1>
+        <div class="sub">报告日期 2026-06-25（周四）· 基线 2026-06-24 · 链式累计自昨日已验收日报</div></div>
+      <div style="display:flex;gap:9px"><a class="btn ghost" href="计算日志.html">查看计算日志</a><a class="btn primary" href="#">导出 Excel</a></div>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi"><div class="l">今日入职 Row2</div><div class="v">3</div><div class="dd">人员表事实</div></div>
+      <div class="kpi"><div class="l">今日离职 Row3</div><div class="v">1</div><div class="dd">去重后</div></div>
+      <div class="kpi"><div class="l">今日净增 Row7</div><div class="v up">+2</div><div class="dd">Row2 − Row3</div></div>
+      <div class="kpi"><div class="l">MTD 净增 Row12</div><div class="v up">+14</div><div class="dd">链式累计</div></div>
+    </div>
+
+    <div class="card" style="margin-bottom:22px">
+      <div class="cb" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span class="muted" style="font-size:12.5px">选择日期：</span>
+        <div class="seg">
+          <a class="on" href="#">06-25</a><a href="#">06-24</a><a href="#">06-23</a><a href="#">06-20</a><a href="#">06-19</a><a href="#">06-18</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="layout">
+      <!-- 主表 -->
+      <div class="card">
+        <div class="ch"><h2>Sheet1 · 主表（Row2–Row40）</h2><span class="meta">蓝字=派生公式行 · 空白行保持空白</span></div>
+        <div class="cb">
+          <div class="tblwrap">
+          <table class="tbl">
+            <thead><tr><th class="rn">行</th><th>事项</th><th class="r">基线 06-24</th><th class="r">报告 06-25</th><th>计算 / 来源</th></tr></thead>
+            <tbody>
+              <tr><td class="rn">2</td><td class="nm">今日入职</td><td class="r">—</td><td class="r">3</td><td class="fx">人员表 入职日期=报告日</td></tr>
+              <tr><td class="rn">3</td><td class="nm">今日离职</td><td class="r">—</td><td class="r">1</td><td class="fx">人员表 离职日期=报告日（去重）</td></tr>
+              <tr><td class="rn">4</td><td class="nm">今日提出离职（主动）</td><td class="r">—</td><td class="r">2</td><td class="fx">离职报表 申请=今日·主动</td></tr>
+              <tr><td class="rn">5</td><td class="nm">今日提出 release（被动）</td><td class="r">—</td><td class="r">1</td><td class="fx">OA 今日首次可见</td></tr>
+              <tr class="derive"><td class="rn">6</td><td class="nm">合计提出离职</td><td class="r">—</td><td class="r">3</td><td class="fx">= Row4 + Row5 = 2 + 1</td></tr>
+              <tr class="derive"><td class="rn">7</td><td class="nm">今日净增</td><td class="r">—</td><td class="r">+2</td><td class="fx">= Row2 − Row3 = 3 − 1</td></tr>
+              <tr><td class="rn">8</td><td class="nm">MTD 入职</td><td class="r">25</td><td class="r">28</td><td class="fx">= 昨日Row8 + Row2 = 25 + 3</td></tr>
+              <tr><td class="rn">9</td><td class="nm">MTD 离职</td><td class="r">13</td><td class="r">14</td><td class="fx">= 昨日Row9 + Row3 = 13 + 1</td></tr>
+              <tr><td class="rn">10</td><td class="nm">MTD 转正</td><td class="r">0</td><td class="r">0</td><td class="fx">暂不涉及，默认 0</td></tr>
+              <tr><td class="rn">11</td><td class="nm">MTD 微软项目调整</td><td class="r">0</td><td class="r">0</td><td class="fx">暂不涉及，默认 0</td></tr>
+              <tr class="derive"><td class="rn">12</td><td class="nm">MTD 净增减人数</td><td class="r">12</td><td class="r">14</td><td class="fx">= Row8 − Row9 − Row10 + Row11</td></tr>
+              <tr><td class="rn">13</td><td class="nm">YTD 入职</td><td class="r">129</td><td class="r">132</td><td class="fx">= 昨日Row13 + Row2</td></tr>
+              <tr><td class="rn">14</td><td class="nm">YTD 离职</td><td class="r">95</td><td class="r">96</td><td class="fx">= 昨日Row14 + Row3（须=在岗时长B10）</td></tr>
+              <tr><td class="rn">15</td><td class="nm">YTD 转正</td><td class="r">0</td><td class="r">0</td><td class="fx">暂不涉及，默认 0</td></tr>
+              <tr><td class="rn">16</td><td class="nm">YTD 微软项目调整</td><td class="r">0</td><td class="r">0</td><td class="fx">暂不涉及，默认 0</td></tr>
+              <tr class="derive"><td class="rn">17</td><td class="nm">YTD 净增减人数</td><td class="r">34</td><td class="r">36</td><td class="fx">= Row13 − Row14 − Row15 + Row16</td></tr>
+              <tr class="derive"><td class="rn">18</td><td class="nm">本月预估入职-招聘提供</td><td class="r">—</td><td class="r">35</td><td class="fx">= Row40（须相等）</td></tr>
+              <tr class="derive"><td class="rn">19</td><td class="nm">本月预估离职人数</td><td class="r">—</td><td class="r">13</td><td class="fx">= Row33</td></tr>
+              <tr><td class="rn">20</td><td class="nm">MTD 转正（预估区）</td><td class="r">0</td><td class="r">0</td><td class="fx">同 Row10</td></tr>
+              <tr><td class="rn">21</td><td class="nm">MTD 微软项目调整（预估区）</td><td class="r">0</td><td class="r">0</td><td class="fx">同 Row11</td></tr>
+              <tr class="derive"><td class="rn">22</td><td class="nm">本月预估净增减人数</td><td class="r">—</td><td class="r">22</td><td class="fx">= Row18 − Row19 − Row20 + Row21</td></tr>
+              <tr class="blank"><td class="rn">23</td><td colspan="4">空白行 · 保持空白</td></tr>
+              <tr class="blank"><td class="rn">24</td><td colspan="4">空白行 · 保持空白</td></tr>
+              <tr class="sec"><td class="rn">25</td><td colspan="4">境外 YTD 在职数据 · 2026-06-25</td></tr>
+              <tr><td class="rn">26</td><td class="nm">境外主体_A（WICRESOFT VIET NAM）</td><td class="r">0</td><td class="r">0</td><td class="fx">当前无数据，保持 0</td></tr>
+              <tr class="blank"><td class="rn">27</td><td colspan="4">空白行 · 保持空白</td></tr>
+              <tr class="blank"><td class="rn">28</td><td colspan="4">空白行 · 保持空白</td></tr>
+              <tr class="sec"><td class="rn">29</td><td colspan="4">事项 · 2026-06-25</td></tr>
+              <tr><td class="rn">30</td><td class="nm">Release 数-截至月底</td><td class="r">3</td><td class="r">4</td><td class="fx">= 昨日Row30 + 今日新增且LWD在本月</td></tr>
+              <tr><td class="rn">31</td><td class="nm">本月提出离职数</td><td class="r">—</td><td class="r">7</td><td class="fx">本月申请+本月LWD+流程有效（名单）</td></tr>
+              <tr><td class="rn">32</td><td class="nm">上月提出本月离职数</td><td class="r">—</td><td class="r">2</td><td class="fx">上月申请·本月LWD·有效</td></tr>
+              <tr class="derive"><td class="rn">33</td><td class="nm">本月预估离职人数</td><td class="r">—</td><td class="r">13</td><td class="fx">= Row30 + Row31 + Row32 = 4+7+2</td></tr>
+              <tr class="blank"><td class="rn">34</td><td colspan="4">空白行 · 保持空白</td></tr>
+              <tr class="blank"><td class="rn">35</td><td colspan="4">空白行 · 保持空白</td></tr>
+              <tr class="sec"><td class="rn">36</td><td colspan="4">事项 · 2026-06-25</td></tr>
+              <tr class="derive"><td class="rn">37</td><td class="nm">当月已经入职总数</td><td class="r">—</td><td class="r">28</td><td class="fx">= Row8（不可用招聘已入职合计覆盖）</td></tr>
+              <tr><td class="rn">38</td><td class="nm">上月接受offer后当月预计入职</td><td class="r">—</td><td class="r">5</td><td class="fx">招聘数据·按表头识别·合计行</td></tr>
+              <tr><td class="rn">39</td><td class="nm">当月接受offer当月预计入职</td><td class="r">—</td><td class="r">2</td><td class="fx">招聘数据·按表头识别·合计行</td></tr>
+              <tr class="derive"><td class="rn">40</td><td class="nm">合计</td><td class="r">—</td><td class="r">35</td><td class="fx">= Row37+Row38+Row39 = 28+5+2</td></tr>
+            </tbody>
+          </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 在岗时长 + 校验 -->
+      <div>
+        <div class="card">
+          <div class="ch"><h2>在岗时长</h2><span class="meta">事业部 × YTD离职 × 平均在职</span></div>
+          <div class="cb">
+            <table class="tbl">
+              <thead><tr><th>事业部</th><th class="r">YTD离职</th><th class="r">平均在职(年)</th></tr></thead>
+              <tbody>
+                <tr><td>BU_A</td><td class="r">18</td><td class="r">2.4</td></tr>
+                <tr><td>BU_B</td><td class="r">14</td><td class="r">1.9</td></tr>
+                <tr><td>BU_C</td><td class="r">12</td><td class="r">3.1</td></tr>
+                <tr><td>BU_D</td><td class="r">11</td><td class="r">2.0</td></tr>
+                <tr><td>BU_E</td><td class="r">10</td><td class="r">2.7</td></tr>
+                <tr><td>BU_F</td><td class="r">9</td><td class="r">1.6</td></tr>
+                <tr><td>BU_G</td><td class="r">12</td><td class="r">2.2</td></tr>
+                <tr><td>BU_H</td><td class="r">10</td><td class="r">2.8</td></tr>
+                <tr class="derive"><td class="nm">合计 (B10)</td><td class="r">96</td><td class="r">2.3</td></tr>
+              </tbody>
+            </table>
+            <div class="note" style="display:flex;gap:8px;align-items:center;margin-top:12px;font-size:12px;color:var(--ok)">
+              ✓ 跨表校验通过：合计 96 = B10 = Sheet1 Row14
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="ch"><h2>发布前校验</h2><span class="meta">12 / 12 通过</span></div>
+          <div class="cb" style="font-size:12.5px;color:var(--muted);line-height:1.9">
+            ✓ 输入源完整　✓ 员工类型过滤 ★<br>
+            ✓ Row2/3 去重　✓ Row4 单号去重<br>
+            ✓ Release LWD　✓ Row31 名单有效<br>
+            ✓ 招聘取数 Row37=Row8　✓ 公式链 ★<br>
+            ✓ 在岗时长=B10=Row14 ★　✓ 样式 / 归档
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

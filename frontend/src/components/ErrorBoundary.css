@@ -1,0 +1,4 @@
+.fatal-error { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; background: var(--bg); color: #7e3f39; text-align: center; }
+.fatal-error h1 { margin: 10px 0 0; color: var(--ink); font-size: 19px; }
+.fatal-error p { margin: 6px 0 16px; color: var(--muted); font-size: 12px; }
+.fatal-error button { min-height: 34px; display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border: 1px solid #d5deea; border-radius: 7px; background: #fff; color: #40536b; font: inherit; font-size: 11.5px; font-weight: 700; cursor: pointer; }

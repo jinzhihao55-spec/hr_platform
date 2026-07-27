@@ -1,0 +1,137 @@
+name: hr-agent-single-user
+
+services:
+  web:
+    build:
+      context: ${FRONTEND_CONTEXT:-../../frontend}
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      API_AUTH_TOKEN: "${API_AUTH_TOKEN:?set API_AUTH_TOKEN in deploy/.env}"
+      OPERATOR_ID: "${OPERATOR_ID:-local-hr-operator}"
+      MAX_UPLOAD_MB: "${MAX_UPLOAD_MB:-20}"
+    ports:
+      - "${WEB_BIND_ADDRESS:-127.0.0.1}:${WEB_PORT:-8080}:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/api/ready >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+    networks: [app]
+
+  api:
+    build:
+      context: ${BACKEND_CONTEXT:-..}
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      APP_ENV: prod
+      APP_HOST: 0.0.0.0
+      APP_PORT: "8000"
+      LOG_LEVEL: "${LOG_LEVEL:-INFO}"
+      REPORT_RULE_VERSION: "${REPORT_RULE_VERSION:-2026-07-23}"
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_USER: "${MYSQL_USER:-hr_agent}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD:?set MYSQL_PASSWORD in deploy/.env}"
+      MYSQL_DB: ai_hr_reports
+      MYSQL_CHARSET: utf8mb4
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_DB: "0"
+      REDIS_PASSWORD: "${REDIS_PASSWORD:?set REDIS_PASSWORD in deploy/.env}"
+      API_AUTH_TOKEN: "${API_AUTH_TOKEN:?set API_AUTH_TOKEN in deploy/.env}"
+      PERSON_KEY_SECRET: "${PERSON_KEY_SECRET:?set PERSON_KEY_SECRET in deploy/.env}"
+      PERSON_KEY_VERSION: "${PERSON_KEY_VERSION:-v1}"
+      LLM_API_KEY: "${LLM_API_KEY:-}"
+      LLM_BASE_URL: "${LLM_BASE_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1}"
+      LLM_MODEL: "${LLM_MODEL:-qwen3.7-plus}"
+      LLM_VISION_API_KEY: "${LLM_VISION_API_KEY:-}"
+      LLM_VISION_BASE_URL: "${LLM_VISION_BASE_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1}"
+      LLM_VISION_MODEL: "${LLM_VISION_MODEL:-qwen3.7-plus}"
+      LLM_TIMEOUT_SECONDS: "${LLM_TIMEOUT_SECONDS:-120}"
+      LLM_MAX_RETRIES: "${LLM_MAX_RETRIES:-2}"
+      CORS_ALLOW_ORIGINS: "http://localhost:${WEB_PORT:-8080},http://127.0.0.1:${WEB_PORT:-8080}"
+      MAX_UPLOAD_MB: "${MAX_UPLOAD_MB:-20}"
+      MONTH_OPENING_ALLOWED_USERS: "${OPERATOR_ID:-local-hr-operator}"
+      SKILLS_DIR: /app/docs/skills
+      UPLOAD_DIR: /app/data/uploads
+      OUTPUT_DIR: /app/data/outputs
+    expose: ["8000"]
+    volumes:
+      - report_outputs:/app/data/outputs
+    tmpfs:
+      - /app/data/uploads:uid=10001,gid=10001,mode=0700
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [app]
+
+  migrate:
+    build:
+      context: ${DATABASE_CONTEXT:-../../database}
+      dockerfile: Dockerfile.migrate
+    restart: "no"
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_DATABASE: ai_hr_reports
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in deploy/.env}"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks: [app]
+
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ai_hr_reports
+      MYSQL_USER: "${MYSQL_USER:-hr_agent}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD:?set MYSQL_PASSWORD in deploy/.env}"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in deploy/.env}"
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    networks: [app]
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: "${REDIS_PASSWORD:?set REDIS_PASSWORD in deploy/.env}"
+    command: ["sh", "-c", "exec redis-server --appendonly yes --requirepass \"$$REDIS_PASSWORD\""]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping 2>/dev/null | grep -q PONG"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+    networks: [app]
+
+networks:
+  app:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  redis_data:
+  report_outputs:

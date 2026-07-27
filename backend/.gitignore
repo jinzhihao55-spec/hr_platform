@@ -1,0 +1,45 @@
+__pycache__/
+*.pyc
+*.pyo
+*.py[cod]
+.venv/
+venv/
+.venv312/
+venv312/
+.env
+*.log
+data/uploads/*
+data/outputs/*
+data/*.db
+!data/uploads/.gitkeep
+!data/outputs/.gitkeep
+.DS_Store
+output/
+
+# IDE / 测试缓存
+.idea/
+.vscode/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# 云平台个人配置
+.aliyun/
+
+# 本地测试数据（全队仅作者本机重跑用）
+testdata/
+
+# 本地重跑 / 对比 / 一次性上传脚本
+scripts/rerun_*.sh
+scripts/upload_delta_*.sh
+scripts/upload_combined.sh
+scripts/compare_*.py
+scripts/extract_expected.py
+
+# 本地开发辅助脚本
+scripts/ocr_table.py
+scripts/seed_baseline.py
+scripts/reset_input_data.py
+scripts/ingest_combined.py

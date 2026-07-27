@@ -1,0 +1,152 @@
+/* ===== 侧边栏 ===== */
+.side {
+  background: #13243c;
+  color: #aebccf;
+  padding: 22px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  z-index: 30;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px 18px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, .07);
+}
+
+.logo .mk {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: #2f6bb0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: 700;
+}
+
+.logo b {
+  color: #fff;
+  font-size: 14.5px;
+}
+
+.logo span {
+  display: block;
+  font-size: 11px;
+  color: #7589a3;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.nav a {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  color: #aebccf;
+  text-decoration: none;
+  font-size: 13.5px;
+}
+
+.nav a .i {
+  flex: 0 0 17px;
+  opacity: .8;
+}
+
+.nav a.active {
+  background: #1e3a5c;
+  color: #fff;
+}
+
+.nav a:hover:not(.active) {
+  background: rgba(255, 255, 255, .04);
+}
+
+.side .foot {
+  margin-top: auto;
+  font-size: 11px;
+  color: #647b97;
+  padding: 8px;
+  line-height: 1.6;
+}
+
+.mobile-nav-trigger,
+.mobile-nav-backdrop {
+  display: none;
+}
+
+.mobile-nav-trigger {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid #dbe3ec;
+  border-radius: 7px;
+  background: #fff;
+  color: #273a53;
+  place-items: center;
+  cursor: pointer;
+}
+
+.mobile-nav-trigger:focus-visible,
+.nav a:focus-visible {
+  outline: 3px solid rgba(83, 151, 225, .32);
+  outline-offset: 2px;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .3; }
+}
+
+@media (max-width: 980px) {
+  .side {
+    display: flex;
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: min(280px, 84vw);
+    transform: translateX(-102%);
+    transition: transform .2s ease;
+    box-shadow: 18px 0 40px rgba(13, 29, 49, .24);
+  }
+
+  .side.open {
+    transform: translateX(0);
+  }
+
+  .mobile-nav-trigger {
+    display: grid;
+    position: fixed;
+    left: 14px;
+    top: 14px;
+    z-index: 50;
+  }
+
+  .mobile-nav-trigger.open {
+    left: calc(min(280px, 84vw) - 52px);
+    border-color: rgba(255, 255, 255, .18);
+    background: rgba(255, 255, 255, .08);
+    color: #fff;
+  }
+
+  .mobile-nav-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    border: 0;
+    background: rgba(11, 24, 41, .42);
+  }
+}

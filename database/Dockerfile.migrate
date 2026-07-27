@@ -1,0 +1,11 @@
+FROM mysql:8.4
+
+WORKDIR /migrations
+
+COPY schema.sql ./schema.sql
+COPY migrations ./migrations
+COPY migrate.sh /usr/local/bin/hr-agent-migrate
+
+RUN chmod 0755 /usr/local/bin/hr-agent-migrate
+
+ENTRYPOINT ["/usr/local/bin/hr-agent-migrate"]
