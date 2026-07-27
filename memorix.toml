@@ -1,0 +1,11 @@
+[codegraph]
+exclude_patterns = [
+  "v1_7_21_test_report/**",
+  "manual_screenshots/**",
+  "网页截图/**",
+  "7.24/**",
+  "data/uploads/**",
+  "data/outputs/**",
+  "output/**",
+  ".trae-html-share-packages/**",
+]
