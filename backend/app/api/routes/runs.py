@@ -63,6 +63,10 @@ def _not_found(exc: LookupError) -> HTTPException:
     return HTTPException(status.HTTP_404_NOT_FOUND, str(exc))
 
 
+def _stale_baseline(exc: run_workflow_service.StaleRunBaseline) -> HTTPException:
+    return HTTPException(status.HTTP_409_CONFLICT, str(exc))
+
+
 def _preview_response(snapshot: PreviewSnapshot) -> dict:
     return {
         "run_id": snapshot.run_id,
@@ -119,8 +123,7 @@ def create_run(req: RunCreateRequest, db: Session = Depends(get_db)):
 @router.get("/runs/{run_id}", response_model=RunDetail)
 def get_run(run_id: str, db: Session = Depends(get_db)):
     try:
-        run, _ = run_workflow_service.refresh_run_state(db, run_id)
-        return run_workflow_service.run_view(db, run.id)
+        return run_workflow_service.run_view(db, run_id)
     except LookupError as exc:
         raise _not_found(exc) from exc
 
@@ -144,10 +147,14 @@ async def put_source(
     db: Session = Depends(get_db),
 ):
     try:
+        run = run_workflow_service.get_run(db, run_id)
+        run_workflow_service.require_current_baseline(db, run)
         result = await RunSourceService(db).ingest(run_id, source_type, file)
         run, readiness = run_workflow_service.refresh_run_state(db, run_id)
     except LookupError as exc:
         raise _not_found(exc) from exc
+    except run_workflow_service.StaleRunBaseline as exc:
+        raise _stale_baseline(exc) from exc
     return {
         **asdict(result),
         "run_status": run.status,
@@ -185,10 +192,14 @@ def get_sources(run_id: str, db: Session = Depends(get_db)):
 @router.post("/runs/{run_id}/parse", response_model=RunDetail)
 def parse_run(run_id: str, db: Session = Depends(get_db)):
     try:
+        run = run_workflow_service.get_run(db, run_id)
+        run_workflow_service.require_current_baseline(db, run)
         run, _ = run_workflow_service.refresh_run_state(db, run_id)
         return run_workflow_service.run_view(db, run.id)
     except LookupError as exc:
         raise _not_found(exc) from exc
+    except run_workflow_service.StaleRunBaseline as exc:
+        raise _stale_baseline(exc) from exc
 
 
 @router.post("/runs/{run_id}/baseline", response_model=ImportDailyResponse)
@@ -316,6 +327,8 @@ def preview_daily(run_id: str, db: Session = Depends(get_db)):
         return _preview_response(build_preview(db, run_id, "daily"))
     except LookupError as exc:
         raise _not_found(exc) from exc
+    except run_workflow_service.StaleRunBaseline as exc:
+        raise _stale_baseline(exc) from exc
 
 
 @router.get("/runs/{run_id}/preview/weekly", response_model=PreviewResponse)
@@ -337,6 +350,8 @@ def preview_weekly(
         )
     except LookupError as exc:
         raise _not_found(exc) from exc
+    except run_workflow_service.StaleRunBaseline as exc:
+        raise _stale_baseline(exc) from exc
 
 
 @router.post("/runs/{run_id}/publish")
@@ -351,6 +366,8 @@ def publish_run(
         )
     except LookupError as exc:
         raise _not_found(exc) from exc
+    except run_workflow_service.StaleRunBaseline as exc:
+        raise _stale_baseline(exc) from exc
     except publication_service.PublicationBlocked as exc:
         raise HTTPException(422, str(exc)) from exc
     except publication_service.PublicationFailed as exc:
@@ -457,24 +474,35 @@ def download_artifact(
     artifact_kind: str,
     db: Session = Depends(get_db),
 ):
-    from app.utils.path_security import resolve_protected_path
+    import traceback
+    import logging
+    _log = logging.getLogger(__name__)
 
-    artifact = db.scalar(
-        select(ReportArtifact).where(
-            ReportArtifact.report_id == report_id,
-            ReportArtifact.artifact_kind == artifact_kind,
-            ReportArtifact.is_deleted == 0,
+    try:
+        from app.utils.path_security import resolve_protected_path
+        from fastapi.responses import FileResponse as _FileResponse
+
+        artifact = db.scalar(
+            select(ReportArtifact).where(
+                ReportArtifact.report_id == report_id,
+                ReportArtifact.artifact_kind == artifact_kind,
+                ReportArtifact.is_deleted == 0,
+            )
         )
-    )
-    if artifact is None:
-        raise HTTPException(404, "report artifact was not found")
-    output_root = Path(settings.output_dir).resolve()
-    resolved = resolve_protected_path(artifact.protected_path, output_root)
-    if resolved is None:
-        raise HTTPException(403, "artifact path is outside protected output")
-    # Auto-heal: persist the rebased path so subsequent requests skip relocation
-    stale = Path(artifact.protected_path).resolve()
-    if resolved != stale:
-        artifact.protected_path = str(resolved)
-        db.commit()
-    return FileResponse(resolved, filename=resolved.name)
+        if artifact is None:
+            raise HTTPException(404, "report artifact was not found")
+        output_root = Path(settings.output_dir).resolve()
+        resolved = resolve_protected_path(artifact.protected_path, output_root)
+        if resolved is None:
+            raise HTTPException(403, "artifact path is outside protected output")
+        # Auto-heal: persist the rebased path so subsequent requests skip relocation
+        stale = Path(artifact.protected_path).resolve()
+        if resolved != stale:
+            artifact.protected_path = str(resolved)
+            db.commit()
+        return _FileResponse(resolved, filename=resolved.name)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        _log.error("download_artifact 失败: %s\n%s", exc, traceback.format_exc())
+        raise HTTPException(500, f"download_artifact 失败: {type(exc).__name__}: {exc}")
