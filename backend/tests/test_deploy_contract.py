@@ -114,6 +114,14 @@ def test_api_waits_for_migration_and_healthy_dependencies() -> None:
     assert re.search(r"mysql:\s*\n\s+condition:\s+service_healthy", migrate)
 
 
+def test_deploy_example_uses_the_application_rule_version() -> None:
+    values = _env_values(ROOT / "deploy/.env.example")
+
+    assert values["REPORT_RULE_VERSION"] == Settings(
+        _env_file=None
+    ).report_rule_version
+
+
 @_REQUIRES_TRI_REPO
 def test_deploy_examples_contain_names_but_no_secret_values() -> None:
     secret_names = {

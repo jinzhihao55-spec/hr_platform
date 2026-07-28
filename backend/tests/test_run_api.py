@@ -41,6 +41,44 @@ def api_client(api_db):
         app.dependency_overrides.pop(get_db, None)
 
 
+def _stale_baseline_scenario(api_db, *, status=RunStatus.ready.value):
+    def published_daily(report_date, version, hash_char):
+        run = ReportRun(
+            report_date=report_date,
+            status=RunStatus.ready.value,
+            rule_version="rules-v1",
+        )
+        api_db.add(run)
+        api_db.flush()
+        report = PublishedReport(
+            run_id=run.id,
+            report_kind="daily",
+            period_start=report_date,
+            period_end=report_date,
+            version=version,
+            is_current=True,
+            snapshot_json="{}",
+            snapshot_hash=hash_char * 64,
+            published_by="test-operator",
+            published_at=datetime.combine(report_date, datetime.min.time()),
+        )
+        api_db.add(report)
+        api_db.flush()
+        return report
+
+    old_baseline = published_daily(date(2026, 7, 21), 1, "a")
+    latest_baseline = published_daily(date(2026, 7, 24), 2, "b")
+    stale_run = ReportRun(
+        report_date=date(2026, 7, 27),
+        status=status,
+        rule_version="rules-v1",
+        baseline_report_id=old_baseline.id,
+    )
+    api_db.add(stale_run)
+    api_db.commit()
+    return stale_run, old_baseline, latest_baseline
+
+
 def test_create_run_then_get_typed_workflow_view(api_client):
     created = api_client.post(
         "/runs", json={"report_date": "2026-07-15"}
@@ -366,6 +404,68 @@ def test_same_day_revision_run_does_not_copy_frozen_facts(api_db, api_client):
     revision_id = response.json()["run"]["id"]
     assert revision_id != run.id
     assert api_db.query(EmploymentFact).filter_by(run_id=revision_id).count() == 0
+
+
+def test_stale_baseline_is_visible_and_revision_uses_latest_daily(
+    api_db, api_client
+):
+    stale_run, _, latest_baseline = _stale_baseline_scenario(api_db)
+
+    view = api_client.get(f"/runs/{stale_run.id}")
+
+    assert view.status_code == 200
+    payload = view.json()
+    assert payload["baseline_status"] == "stale"
+    assert payload["baseline_period_end"] == "2026-07-21"
+    assert payload["baseline_version"] == 1
+    assert payload["latest_baseline_report_id"] == latest_baseline.id
+    assert payload["latest_baseline_period_end"] == "2026-07-24"
+    assert payload["latest_baseline_version"] == 2
+
+    revision = api_client.post(
+        "/runs",
+        json={"report_date": "2026-07-27", "create_new": True},
+    )
+
+    assert revision.status_code == 201
+    assert revision.json()["run"]["baseline_report_id"] == latest_baseline.id
+
+
+def test_stale_baseline_blocks_source_upload_before_file_is_read(
+    api_db, api_client, monkeypatch
+):
+    stale_run, _, _ = _stale_baseline_scenario(
+        api_db,
+        status=RunStatus.created.value,
+    )
+    called = []
+
+    async def should_not_ingest(*_args, **_kwargs):
+        called.append(True)
+
+    from app.services.run_source_service import RunSourceService
+
+    monkeypatch.setattr(RunSourceService, "ingest", should_not_ingest)
+
+    response = api_client.put(
+        f"/runs/{stale_run.id}/sources/personnel",
+        files={"file": ("fake.xlsx", b"must-not-be-read", "application/octet-stream")},
+    )
+
+    assert response.status_code == 409
+    assert "2026-07-21 v1" in response.json()["detail"]
+    assert "2026-07-24 v2" in response.json()["detail"]
+    assert called == []
+
+
+def test_stale_baseline_blocks_unpublished_preview(api_db, api_client):
+    stale_run, _, _ = _stale_baseline_scenario(api_db)
+
+    client = TestClient(app, raise_server_exceptions=False)
+    response = client.get(f"/runs/{stale_run.id}/preview/daily")
+
+    assert response.status_code == 409
+    assert "创建同日修订 Run" in response.json()["detail"]
 
 
 def test_report_history_list_does_not_select_snapshot_payload(api_db, api_client):

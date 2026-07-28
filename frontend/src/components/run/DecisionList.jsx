@@ -134,17 +134,6 @@ function RecruitmentValueForm({ decision, savingId, onAnswer }) {
 }
 
 export default function DecisionList({ runId, decisions, savingId, onAnswer }) {
-  const pendingDecisions = decisions.filter((decision) => decision.status !== 'answered');
-  const batchableDecisions = pendingDecisions.filter(
-    (decision) => !['release_lwd_missing', 'recruitment_label_uncertain'].includes(
-      decision.decision_code,
-    ),
-  );
-  const hasBatchable = batchableDecisions.length > 1;
-  const evidenceRevision = decisions
-    .map((decision) => `${decision.id}:${decision.status}:${JSON.stringify(decision.answer)}`)
-    .join('|');
-
   if (!decisions?.length) {
     return (
       <div className="review-empty">
@@ -154,21 +143,12 @@ export default function DecisionList({ runId, decisions, savingId, onAnswer }) {
     );
   }
 
+  const evidenceRevision = decisions
+    .map((decision) => `${decision.id}:${decision.status}:${JSON.stringify(decision.answer)}`)
+    .join('|');
+
   return (
     <div className="decision-list">
-      {hasBatchable && (
-        <div className="batch-actions">
-          <span>{batchableDecisions.length} 项可批量确认</span>
-          <button type="button" className="batch-confirm-all"
-            disabled={Boolean(savingId)}
-            onClick={() => batchableDecisions.forEach(
-              (decision) => onAnswer(decision, decision.options?.[0] || '确认'),
-            )}
-          >
-            全部确认
-          </button>
-        </div>
-      )}
       {decisions.map((decision, index) => {
         const answered = decision.status === 'answered';
         return (

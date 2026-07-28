@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -220,6 +220,46 @@ describe('RunPreviewPage', () => {
     );
   });
 
+  it('shows every failed weekly calculation instead of only the blocker count', async () => {
+    getRun.mockResolvedValue({
+      ...run,
+      validations: [
+        {
+          report_kind: 'weekly',
+          validation_code: 'weekly_last_workday_only',
+          severity: 'BLOCK',
+          outcome: 'FAIL',
+          message: '周报仅可在本周最后一个工作日发布',
+        },
+        {
+          report_kind: 'weekly',
+          validation_code: 'weekly_leavers_reconcile',
+          severity: 'BLOCK',
+          outcome: 'FAIL',
+          message: '周报本周离职=日报Row3合计',
+        },
+      ],
+    });
+    getRunPreview.mockImplementation((_runId, reportKind) => {
+      const result = preview(reportKind, reportKind === 'daily');
+      if (reportKind === 'weekly') {
+        result.validation_summary.block_count = 2;
+        result.validation_summary.blocking_validation_codes = [
+          'weekly_last_workday_only',
+          'weekly_leavers_reconcile',
+        ];
+      }
+      return Promise.resolve(result);
+    });
+    const user = userEvent.setup();
+    renderPreview();
+
+    await user.click(await screen.findByRole('button', { name: '周报预览' }));
+
+    expect(screen.getByText('还有 1 项计算校验未通过')).toBeVisible();
+    expect(screen.getByText('周报本周离职=日报Row3合计')).toBeVisible();
+  });
+
   it('opens Friday weekly review, confirms dedupe, and unlocks weekly publish', async () => {
     getRun.mockResolvedValue({ ...run, report_date: '2026-07-17' });
     let weeklyPreviewRequests = 0;
@@ -371,5 +411,28 @@ describe('RunPreviewPage', () => {
     await user.click(screen.getByRole('button', { name: '创建同日修订 Run' }));
 
     expect(createRevisionRun).toHaveBeenCalledWith('2026-07-17');
+  });
+
+  it('blocks publication for a stale baseline and offers a same-day revision', async () => {
+    getRun.mockResolvedValue({
+      ...run,
+      baseline_status: 'stale',
+      baseline_period_end: '2026-07-21',
+      baseline_version: 1,
+      latest_baseline_period_end: '2026-07-24',
+      latest_baseline_version: 2,
+    });
+    getRunPreview.mockRejectedValue(new Error('日报基线已过期'));
+    createRevisionRun.mockResolvedValue({ run: { id: 'revision-run-1' } });
+    const user = userEvent.setup();
+    renderPreview();
+
+    const warning = (await screen.findByText('当前日报基线已过期')).closest('[role="alert"]');
+    expect(within(warning).getByText(/2026年7月21日 v1/)).toBeVisible();
+    expect(within(warning).getByText(/2026年7月24日 v2/)).toBeVisible();
+    expect(screen.getByRole('button', { name: '发布日报' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: '创建同日修订 Run' }));
+
+    expect(createRevisionRun).toHaveBeenCalledWith('2026-07-15');
   });
 });

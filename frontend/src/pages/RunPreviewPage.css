@@ -15,6 +15,12 @@
 .preview-alert.success { border: 1px solid #cee4d8; background: var(--ok-soft); color: #337758; }
 .preview-alert.warning { display: flex; align-items: center; gap: 7px; border: 1px solid #ead5b4; background: #fffaf1; color: #815e28; }
 .preview-alert.warning svg { flex: 0 0 auto; }
+.preview-alert.validation-details { display: flex; align-items: flex-start; gap: 8px; }
+.preview-alert.validation-details svg { flex: 0 0 auto; margin-top: 1px; }
+.preview-alert.validation-details strong { display: block; }
+.preview-alert.validation-details ul { margin: 5px 0 0; padding-left: 18px; }
+.preview-alert.validation-details li + li { margin-top: 3px; }
+.preview-alert.validation-details p { margin: 5px 0 0; color: #80534e; font-size: 10.5px; }
 .superseded-notice > div { min-width: 0; flex: 1; }
 .superseded-notice strong { display: block; overflow-wrap: anywhere; }
 .superseded-notice p { margin: 2px 0 0; color: #786545; font-size: 10.5px; }

@@ -64,7 +64,7 @@ export default function Sidebar() {
               key={to}
               to={to}
               className={({ isActive }) => (
-                isActive
+                isActive || (to === '/calendar' && location.pathname.startsWith('/runs/'))
                   ? 'active'
                   : ''
               )}

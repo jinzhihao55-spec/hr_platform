@@ -362,6 +362,53 @@ def test_weekly_joiners_count_same_person_once_across_duplicate_employments():
     assert total["joiners"] == 1
 
 
+def test_weekly_departure_ignores_non_selected_duplicate_employment():
+    report_date = date(2026, 7, 24)
+    old_employment = _employment(
+        "person-1",
+        "FAKE-OLD",
+        date(2026, 7, 6),
+        source_row_no=7,
+        business_unit="NWTS",
+    )
+    old_employment.update({
+        "employee_status": "resigned",
+        "leave_date": date(2026, 7, 21),
+        "leave_first_visible": date(2026, 7, 21),
+    })
+    current_employment = _employment(
+        "person-1",
+        "FAKE-CURRENT",
+        date(2026, 7, 13),
+        source_row_no=8,
+        business_unit="NWTS",
+    )
+    bundle = _bundle(
+        [old_employment, current_employment],
+        report_date,
+        resignations=[
+            {
+                "person_id": "person-1",
+                "process_no": "FAKE-PROCESS-OLD",
+                "emp_no": "FAKE-OLD",
+                "process_status": "审批完成",
+                "resignation_type": "主动离职",
+                "last_working_day": date(2026, 7, 21),
+                "apply_time": pd.Timestamp(date(2026, 7, 17)),
+                "name": "测试员工甲",
+            }
+        ],
+    )
+
+    result = CalculationAgent().run_weekly_bundle(
+        bundle, date(2026, 7, 20), report_date
+    )
+
+    assert result["main_rows"][0]["leavers"] == 0
+    total = next(row for row in result["trace"] if row.get("is_total"))
+    assert total["leavers"] == 0
+
+
 def test_conflicting_active_employment_dimensions_block_weekly_review():
     bundle = _bundle(
         [

@@ -27,6 +27,7 @@ export default function RunReviewPage({ run, onRefresh, onContinue, onReplaceInp
     [run?.validations],
   );
   const baselineMissing = !run?.baseline_report_id;
+  const baselineStale = run?.baseline_status === 'stale';
   const initialBaselinePublished = Boolean(
     baselineMissing
     && (run?.targets || []).some(
@@ -37,6 +38,8 @@ export default function RunReviewPage({ run, onRefresh, onContinue, onReplaceInp
     run?.status === 'ready'
     && pending.length === 0
     && blockingValidations.length === 0
+    && !baselineMissing
+    && !baselineStale
   );
 
   const answerDecision = async (decision, answer) => {
@@ -59,6 +62,7 @@ export default function RunReviewPage({ run, onRefresh, onContinue, onReplaceInp
   let blockReason = '';
   if (pending.length) blockReason = `还有 ${pending.length} 项需要确认`;
   else if (blockingValidations.length) blockReason = '仍有阻断校验未通过';
+  else if (baselineStale) blockReason = '日报基线已过期，请创建同日修订 Run';
   else if (initialBaselinePublished) blockReason = '本日已作为初始基线发布';
   else if (baselineMissing) blockReason = '缺少上一份已发布日报基线';
   else if (run?.status !== 'ready') blockReason = '等待四项输入完成解析';

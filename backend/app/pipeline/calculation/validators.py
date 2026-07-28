@@ -144,7 +144,7 @@ def run_weekly_checks(ctx: dict[str, Any]) -> list[dict]:
             {
                 "check": "周报本周入职=日报Row2合计",
                 "passed": weekly_joiners == int(daily.get("joiners") or 0),
-                "hard_block": False,
+                "hard_block": True,
                 "weekly": weekly_joiners,
                 "daily_sum": int(daily.get("joiners") or 0),
                 "report_dates": daily.get("report_dates", []),
@@ -152,7 +152,7 @@ def run_weekly_checks(ctx: dict[str, Any]) -> list[dict]:
             {
                 "check": "周报本周离职=日报Row3合计",
                 "passed": weekly_leavers == int(daily.get("leavers") or 0),
-                "hard_block": False,
+                "hard_block": True,
                 "weekly": weekly_leavers,
                 "daily_sum": int(daily.get("leavers") or 0),
                 "report_dates": daily.get("report_dates", []),

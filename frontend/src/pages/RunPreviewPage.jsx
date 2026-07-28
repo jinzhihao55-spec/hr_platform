@@ -31,6 +31,12 @@ function numericDelta(current, baseline) {
   return delta > 0 ? `+${delta}` : String(delta);
 }
 
+function baselineLabel(periodEnd, version) {
+  if (!periodEnd) return '未关联';
+  const [year, month, day] = periodEnd.split('-').map(Number);
+  return `${year}年${month}月${day}日${version ? ` v${version}` : ''}`;
+}
+
 function dailyRows(preview, baselineReport) {
   const current = preview?.rows || {};
   const baseline = baselineReport?.snapshot?.rows || {};
@@ -59,6 +65,15 @@ function blockingReason(preview) {
     return '周报仅在本周最后一个工作日发布；当前内容只用于过程预览。';
   }
   return '';
+}
+
+function failedCalculationValidations(run, reportKind) {
+  return (run?.validations || []).filter((validation) => (
+    validation.report_kind === reportKind
+    && validation.severity === 'BLOCK'
+    && validation.outcome !== 'PASS'
+    && validation.validation_code !== 'weekly_last_workday_only'
+  ));
 }
 
 export default function RunPreviewPage() {
@@ -130,6 +145,11 @@ export default function RunPreviewPage() {
       if (!activeKindTouched.current && isFriday && weeklyNeedsAttention) {
         setActiveKind('weekly');
       }
+      try {
+        setRun(await getRun(runId));
+      } catch {
+        setRun(runData);
+      }
     } catch (requestError) {
       setError(requestError.message || '预览加载失败');
     } finally {
@@ -172,6 +192,19 @@ export default function RunPreviewPage() {
             weekly: weeklyError.message || '周报预览刷新失败',
           }));
         }
+      }
+      try {
+        const refreshedRun = await getRun(runId);
+        setRun({
+          ...refreshedRun,
+          targets: (refreshedRun.targets || []).map((target) => (
+            target.report_kind === kind
+              ? { ...target, status: 'published', published_report_id: report?.id }
+              : target
+          )),
+        });
+      } catch {
+        // Keep the optimistic published target when refresh fails.
       }
       setNotice(`${KINDS[kind].label}已发布，报告版本已写入历史记录。`);
     } catch (requestError) {
@@ -229,8 +262,10 @@ export default function RunPreviewPage() {
   }
 
   const activePreview = previews[activeKind];
+  const baselineStale = run.baseline_status === 'stale';
   const activeError = previewErrors[activeKind];
   const activeBlockingReason = blockingReason(activePreview);
+  const activeFailedCalculations = failedCalculationValidations(run, activeKind);
   const weeklyRows = previews.weekly?.main_rows || [];
   const supersededKinds = Object.entries(KINDS)
     .filter(([kind]) => targetFor(run, kind)?.status === 'superseded')
@@ -244,7 +279,10 @@ export default function RunPreviewPage() {
             <ArrowLeft aria-hidden="true" size={15} />返回输入与确认
           </Link>
           <h1>报表预览</h1>
-          <p>{run.report_date} · 规则版本 {run.rule_version}</p>
+          <p>
+            {run.report_date} · 规则版本 {run.rule_version} · 基线{' '}
+            {baselineLabel(run.baseline_period_end, run.baseline_version)}
+          </p>
         </div>
         <div className="publish-actions" aria-label="独立发布">
           {Object.entries(KINDS).map(([kind, definition]) => {
@@ -257,6 +295,7 @@ export default function RunPreviewPage() {
               !preview?.publishable
               || published
               || superseded
+              || baselineStale
               || Boolean(publishingKind)
             );
             const disabledReason = blockingReason(preview);
@@ -290,6 +329,32 @@ export default function RunPreviewPage() {
 
       {error && <div className="preview-alert error" role="alert">{error}</div>}
       {notice && <div className="preview-alert success" role="status">{notice}</div>}
+      {baselineStale && (
+        <div className="preview-alert warning superseded-notice" role="alert">
+          <CircleAlert aria-hidden="true" size={16} />
+          <div>
+            <strong>当前日报基线已过期</strong>
+            <p>
+              当前为 {baselineLabel(run.baseline_period_end, run.baseline_version)}；
+              最新可用基线为 {baselineLabel(
+                run.latest_baseline_period_end,
+                run.latest_baseline_version,
+              )}。本次运行不能继续发布。
+            </p>
+          </div>
+          <button
+            type="button"
+            className="weekly-revision-action"
+            disabled={Boolean(reviewActionId)}
+            onClick={createSameDayRevision}
+          >
+            {reviewActionId === 'revision'
+              ? <LoaderCircle className="spin" aria-hidden="true" size={15} />
+              : <RefreshCw aria-hidden="true" size={15} />}
+            创建同日修订 Run
+          </button>
+        </div>
+      )}
       {supersededKinds.length > 0 && (
         <div className="preview-alert warning superseded-notice" role="status">
           <RefreshCw aria-hidden="true" size={16} />
@@ -347,6 +412,21 @@ export default function RunPreviewPage() {
         <div className="preview-alert warning" role="status">
           <CircleAlert aria-hidden="true" size={16} />
           {activeBlockingReason}
+        </div>
+      )}
+
+      {activeFailedCalculations.length > 0 && (
+        <div className="preview-alert error validation-details" role="alert">
+          <CircleAlert aria-hidden="true" size={16} />
+          <div>
+            <strong>还有 {activeFailedCalculations.length} 项计算校验未通过</strong>
+            <ul>
+              {activeFailedCalculations.map((validation) => (
+                <li key={validation.validation_code}>{validation.message}</li>
+              ))}
+            </ul>
+            <p>请核对输入和日报链路；输入已冻结时请创建同日修订 Run。</p>
+          </div>
         </div>
       )}
 

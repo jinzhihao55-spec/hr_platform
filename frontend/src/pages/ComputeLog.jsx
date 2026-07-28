@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import TraceItem from '../components/TraceItem/TraceItem';
 import CheckItem from '../components/CheckItem/CheckItem';
 import { getDailyDates, getDailyView, getWeeklyWeeks, getWeeklyView } from '../services';
+import { mapChecks } from './computeLogMappers';
 import './ComputeLog.css';
 
 // 某一行相关校验的真实结果：✗ 有失败 / ✓ 全通过 / — 无相关校验
@@ -78,14 +79,6 @@ function mapWeeklyTraces(viewData) {
   }));
 
   return [...buTraces, ...ccTraces];
-}
-
-function mapChecks(viewData) {
-  return (viewData?.checks || viewData?.validations || []).map((c) => ({
-    label: typeof c === 'string' ? c : c.message || c.name || c.label || c.check,
-    hard: typeof c === 'object' ? c.hard_block || c.hard || false : false,
-    passed: typeof c === 'object' ? (c.passed ?? true) : true,
-  }));
 }
 
 function findWeeklyIdx(options, weekStart, weekEnd) {

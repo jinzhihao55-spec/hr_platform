@@ -24,6 +24,7 @@ from app.models.publication import PublishedReport
 from app.models.runs import ReportRun
 from app.repositories import report_repo, run_repo
 from app.services.fact_bundle_service import FactBundleService
+from app.services.run_workflow_service import require_current_baseline
 from app.services.run_validation_service import (
     ValidationSummary,
     replace_calculation_validations,
@@ -244,15 +245,11 @@ def _build_bundle(db: Session, run: ReportRun, report_kind: str) -> FactBundle:
         )
         tenure_rows = tuple(loaded_tenure_rows)
         if report_kind == "daily" and (baseline_date is None or not baseline_rows):
-            # 初始 Run：没有任何历史数据时，自动以全 0 基线启动
-            all_dates = report_repo.list_daily_dates(db, limit=1)
-            if not all_dates:
-                baseline_date = run.report_date
-                baseline_rows = {8: 0, 9: 0, 13: 0, 14: 0, 30: 0}
-            else:
-                raise BaselineMissingError("日报预览缺少已发布基线")
+            raise BaselineMissingError("日报预览缺少已发布基线")
         if baseline_date is None:
             baseline_date = cal.prev_workday(run.report_date)
+        if not baseline_rows:
+            baseline_rows = {8: 0, 9: 0, 13: 0, 14: 0, 30: 0}
 
     week_start, _ = cal.week_bounds(run.report_date)
     reconciliation = _daily_reconciliation(db, week_start, run.report_date)
@@ -347,6 +344,7 @@ def build_preview(
     if published is not None:
         checkpoint("published_snapshot")
         return published
+    require_current_baseline(db, run)
     bundle = bundle or _build_bundle(db, run, report_kind)
     checkpoint("fact_bundle")
     if bundle.report_date != run.report_date:
