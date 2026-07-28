@@ -38,6 +38,11 @@ function displayDate(value) {
   return `${year}年${month}月${day}日`;
 }
 
+function baselineLabel(periodEnd, version) {
+  if (!periodEnd) return '未关联';
+  return `${displayDate(periodEnd)}${version ? ` v${version}` : ''}`;
+}
+
 function shortHash(value) {
   return value ? `${value.slice(0, 8)}…${value.slice(-6)}` : '尚未冻结';
 }
@@ -88,6 +93,7 @@ export default function RunWorkspacePage() {
     [run?.sources],
   );
   const sourceCount = uploadedTypes.size;
+  const baselineStale = run?.baseline_status === 'stale';
   const targetPublished = (run?.targets || []).some((target) => target.status === 'published');
   const publishedLabel = publishedStatusLabel(run?.targets);
   const initialBaselinePublished = Boolean(
@@ -97,7 +103,8 @@ export default function RunWorkspacePage() {
     ),
   );
   const locked = Boolean(
-    run?.source_bundle_hash
+    baselineStale
+    || run?.source_bundle_hash
     || ['ready', 'deduplicated'].includes(run?.status)
     || run?.status === 'failed'
     || targetPublished,
@@ -215,6 +222,25 @@ export default function RunWorkspacePage() {
 
       {error && <div className="run-inline-error" role="alert">{error}</div>}
       {baselineNotice && <div className="run-inline-success" role="status">{baselineNotice}</div>}
+      {baselineStale && (
+        <div className="run-failure" role="alert">
+          <CircleAlert aria-hidden="true" size={19} />
+          <div>
+            <strong>当前日报基线已过期</strong>
+            <p>
+              当前为 {baselineLabel(run.baseline_period_end, run.baseline_version)}；
+              最新可用基线为 {baselineLabel(
+                run.latest_baseline_period_end,
+                run.latest_baseline_version,
+              )}。请创建新的同日运行并重新上传四项输入。
+            </p>
+          </div>
+          <button type="button" onClick={createSameDayRevision} disabled={creatingRevision}>
+            <RefreshCw className={creatingRevision ? 'spin' : ''} aria-hidden="true" size={15} />
+            创建同日修订 Run
+          </button>
+        </div>
+      )}
       {run.status === 'failed' && (
         <div className="run-failure" role="alert">
           <CircleAlert aria-hidden="true" size={19} />
@@ -239,7 +265,7 @@ export default function RunWorkspacePage() {
               </div>
               <span className="source-count">{sourceCount} / {REQUIRED_SOURCE_COUNT} 已就绪</span>
             </div>
-            {locked && (
+            {locked && !baselineStale && (
               <div className="input-lock-notice">
                 <LockKeyhole aria-hidden="true" size={15} />
                 <span>该运行的输入已冻结。如需更换文件，请创建同日修订 Run。</span>
@@ -293,7 +319,13 @@ export default function RunWorkspacePage() {
             <div><dt>输入完整度</dt><dd>{sourceCount} / 4</dd></div>
             <div>
               <dt>日报基线</dt>
-              <dd>{run.baseline_report_id ? '已关联' : (initialBaselinePublished ? '本日初始基线' : '待建立')}</dd>
+              <dd>
+                {run.baseline_period_end
+                  ? baselineLabel(run.baseline_period_end, run.baseline_version)
+                  : run.baseline_report_id
+                    ? '已关联'
+                    : (initialBaselinePublished ? '本日初始基线' : '待建立')}
+              </dd>
             </div>
             <div><dt>规则版本</dt><dd>{run.rule_version}</dd></div>
             <div><dt>尝试次数</dt><dd>{run.attempt_no ?? 0}</dd></div>

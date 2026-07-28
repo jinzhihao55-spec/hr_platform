@@ -23,7 +23,7 @@ import app.models  # noqa: F401  Register all ORM tables.
 from app.core import constants as C
 from app.core.database import Base
 from app.domain.fact_bundle import FactBundle
-from app.models.publication import ReportArtifact
+from app.models.publication import PublishedReport, ReportArtifact
 from app.models.runs import ReportRun, RunStatus
 from app.pipeline.calculation import validators, weekly as weekly_calc
 from app.pipeline.calculation.daily import ITEMS
@@ -474,10 +474,22 @@ def _fake_daily_template(path: Path) -> Path:
 
 
 def _new_run(db, report_date: date) -> ReportRun:
+    baseline = db.scalar(
+        select(PublishedReport)
+        .where(
+            PublishedReport.report_kind == "daily",
+            PublishedReport.period_end < report_date,
+            PublishedReport.is_current.is_(True),
+            PublishedReport.is_deleted == 0,
+        )
+        .order_by(PublishedReport.period_end.desc(), PublishedReport.version.desc())
+        .limit(1)
+    )
     run = ReportRun(
         report_date=report_date,
         status=RunStatus.ready.value,
         rule_version="fake-regression-v1",
+        baseline_report_id=baseline.id if baseline else None,
     )
     db.add(run)
     db.flush()

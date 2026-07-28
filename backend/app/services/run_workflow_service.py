@@ -23,6 +23,10 @@ from app.services.decision_service import list_decisions
 from app.services.fact_history_service import materialize_run_history
 
 
+class StaleRunBaseline(ValueError):
+    pass
+
+
 def _summary(run: ReportRun) -> dict:
     return {
         "id": run.id,
@@ -45,6 +49,48 @@ def _default_baseline(db: Session, report_date: date) -> PublishedReport | None:
         )
         .order_by(PublishedReport.period_end.desc(), PublishedReport.version.desc())
         .limit(1)
+    )
+
+
+def baseline_view(db: Session, run: ReportRun) -> dict:
+    selected = (
+        db.get(PublishedReport, run.baseline_report_id)
+        if run.baseline_report_id
+        else None
+    )
+    latest = _default_baseline(db, run.report_date)
+    if latest is None:
+        status = "missing" if selected is None else "current"
+    elif selected is None or selected.id != latest.id:
+        status = "stale"
+    else:
+        status = "current"
+    return {
+        "baseline_status": status,
+        "baseline_period_end": selected.period_end if selected else None,
+        "baseline_version": selected.version if selected else None,
+        "latest_baseline_report_id": latest.id if latest else None,
+        "latest_baseline_period_end": latest.period_end if latest else None,
+        "latest_baseline_version": latest.version if latest else None,
+    }
+
+
+def require_current_baseline(db: Session, run: ReportRun) -> None:
+    view = baseline_view(db, run)
+    if view["baseline_status"] != "stale":
+        return
+    selected = (
+        f'{view["baseline_period_end"].isoformat()} v{view["baseline_version"]}'
+        if view["baseline_period_end"]
+        else "未关联"
+    )
+    latest = (
+        f'{view["latest_baseline_period_end"].isoformat()} '
+        f'v{view["latest_baseline_version"]}'
+    )
+    raise StaleRunBaseline(
+        f"当前日报基线 {selected} 已过期，最新可用基线为 {latest}；"
+        "请创建同日修订 Run。"
     )
 
 
@@ -108,6 +154,7 @@ def get_run(db: Session, run_id: str) -> ReportRun:
 
 def run_view(db: Session, run_id: str) -> dict:
     run = get_run(db, run_id)
+    baseline = baseline_view(db, run)
     sources = db.scalars(
         select(RunSource)
         .where(RunSource.run_id == run.id, RunSource.is_deleted == 0)
@@ -128,6 +175,7 @@ def run_view(db: Session, run_id: str) -> dict:
     ).all()
     return {
         **_summary(run),
+        **baseline,
         "attempt_no": run.attempt_no,
         "source_bundle_hash": run.source_bundle_hash,
         "error_code": run.error_code,

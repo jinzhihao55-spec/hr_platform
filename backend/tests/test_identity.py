@@ -73,6 +73,7 @@ def test_different_secrets_produce_different_keys():
 def test_production_settings_require_person_key_secret():
     with pytest.raises(ValueError, match="person_key_secret"):
         Settings(
+            _env_file=None,
             app_env="prod",
             mysql_password="fake-password",
             redis_password="fake-password",

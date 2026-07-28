@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -241,6 +241,30 @@ describe('RunWorkspacePage', () => {
     renderWorkspace();
 
     await user.click(await screen.findByRole('button', { name: '创建同日修订 Run' }));
+
+    expect(createRevisionRun).toHaveBeenCalledWith('2026-07-15');
+  });
+
+  it('blocks a stale baseline and offers a same-day revision', async () => {
+    getRun.mockResolvedValue({
+      ...emptyRun,
+      status: 'ready',
+      source_bundle_hash: 'f'.repeat(64),
+      baseline_status: 'stale',
+      baseline_period_end: '2026-07-21',
+      baseline_version: 1,
+      latest_baseline_period_end: '2026-07-24',
+      latest_baseline_version: 2,
+    });
+    createRevisionRun.mockResolvedValue({ run: { id: 'revision-run-1' } });
+    const user = userEvent.setup();
+    renderWorkspace();
+
+    const warning = (await screen.findByText('当前日报基线已过期')).closest('[role="alert"]');
+    expect(within(warning).getByText(/2026年7月21日 v1/)).toBeVisible();
+    expect(within(warning).getByText(/2026年7月24日 v2/)).toBeVisible();
+    expect(screen.getByRole('button', { name: /无法预览：日报基线已过期/ })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: '创建同日修订 Run' }));
 
     expect(createRevisionRun).toHaveBeenCalledWith('2026-07-15');
   });

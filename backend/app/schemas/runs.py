@@ -138,6 +138,12 @@ class RunDetail(RunSummary):
     source_bundle_hash: str | None = None
     error_code: str | None = None
     error_message: str | None = None
+    baseline_status: Literal["current", "stale", "missing"] = "missing"
+    baseline_period_end: date | None = None
+    baseline_version: int | None = None
+    latest_baseline_report_id: str | None = None
+    latest_baseline_period_end: date | None = None
+    latest_baseline_version: int | None = None
     sources: list[RunSourceView] = Field(default_factory=list)
     decisions: list[DecisionView] = Field(default_factory=list)
     validations: list[ValidationView] = Field(default_factory=list)
