@@ -333,6 +333,7 @@ def test_next_run_replays_four_source_published_baseline_without_mutating_it(
             "31": {"value": 25},
             "32": {"value": 2},
             "33": {"value": 27},
+            "34": {"value": None},
         },
         "tenure": {"rows": []},
     }
@@ -365,6 +366,7 @@ def test_next_run_replays_four_source_published_baseline_without_mutating_it(
             31: 24,
             32: 2,
             33: 27,
+            34: None,
         }.items()
     }
     calls = []
@@ -387,6 +389,7 @@ def test_next_run_replays_four_source_published_baseline_without_mutating_it(
         32: 2,
         33: 27,
     }
+    assert 34 not in rows
     assert calls == [
         (
             baseline_run.id,

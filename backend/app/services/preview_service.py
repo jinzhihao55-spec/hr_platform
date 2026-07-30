@@ -246,7 +246,7 @@ def _baseline_from_published(
     run: ReportRun,
     *,
     replay_latest_rules: bool = True,
-) -> tuple[date, dict[int, Any], date | None, tuple[dict[str, Any], ...]] | None:
+) -> tuple[date, dict[int, int], date | None, tuple[dict[str, Any], ...]] | None:
     if not run.baseline_report_id:
         return None
     report = db.get(PublishedReport, run.baseline_report_id)
@@ -255,11 +255,17 @@ def _baseline_from_published(
     payload = decode_json_text(report.snapshot_json) or {}
     rows = payload.get("rows") or {}
     required = (8, 9, 13, 14, 30)
-    baseline = {
-        int(number): info.get("value")
-        for number, info in rows.items()
-        if isinstance(info, Mapping)
-    }
+    baseline: dict[int, int] = {}
+    for number, info in rows.items():
+        if not isinstance(info, Mapping):
+            continue
+        value = info.get("value")
+        if value is None:
+            continue
+        try:
+            baseline[int(number)] = int(value)
+        except (TypeError, ValueError):
+            continue
     for row in required:
         baseline[row] = int(baseline.get(row) or 0)
     tenure = payload.get("tenure") or {}
@@ -301,7 +307,11 @@ def _baseline_from_published(
                 report.id,
             )
             raise BaselineMissingError("前一日基线无法按最新规则重新计算") from exc
-        baseline = {number: row.value for number, row in replayed.rows.items()}
+        baseline = {
+            number: int(row.value)
+            for number, row in replayed.rows.items()
+            if row.value is not None
+        }
         for row in required:
             baseline[row] = int(baseline.get(row) or 0)
         tenure_rows = tuple(dict(row) for row in replayed.tenure.get("rows") or ())
