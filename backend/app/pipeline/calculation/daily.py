@@ -640,7 +640,7 @@ def _proposed_last_month_leave_this_month(
     res: pd.DataFrame,
     report_date,
 ):
-    """Row32：上月主动离职申请 + LWD 在本月 + 流程未拒。"""
+    """Row32：上月申请 + LWD 在本月 + 流程未拒，排除明确的被动 Release。"""
     hits = []
     prev_m = 12 if report_date.month == 1 else report_date.month - 1
     prev_y = report_date.year - 1 if report_date.month == 1 else report_date.year
@@ -649,7 +649,9 @@ def _proposed_last_month_leave_this_month(
         for identity, r in _selected_resignation_rows(emp, res):
             rtype = str(r.get("resignation_type") or "")
             status = str(r.get("process_status") or "")
-            if not _is_active_type(rtype):
+            # Row32 没有独立的“上月 Release”行，历史口径会保留类型为空或
+            # 非标准写法的有效申请；仅剔除明确归类为被动 Release 的记录。
+            if rtype in C.get_resignation_passive():
                 continue
             if status in C.get_process_status_rejected():
                 continue
