@@ -580,14 +580,18 @@ def _count_release(agr: pd.DataFrame, report_date):
 
 
 def _release_to_month_end(agr: pd.DataFrame, report_date, baseline_val):
-    """Row30：昨日 Row30 + 今日首次可见且计入 Row30=是（LWD 在本月）。"""
+    """Row30：昨日值 + 当日新增；HR 人工确认计入时优先于首次可见日期。"""
     inc = 0
     hits = []
     if not agr.empty:
         seen = set()
         for _, r in agr.iterrows():
             fsb = r.get("first_seen_batch")
-            if (fsb if isinstance(fsb, date) else None) != report_date:
+            manual_include = bool(r.get("manual_row5_include"))
+            if (
+                not manual_include
+                and (fsb if isinstance(fsb, date) else None) != report_date
+            ):
                 continue
             if bool(r.get("lwd_pending")):
                 continue
@@ -603,12 +607,15 @@ def _release_to_month_end(agr: pd.DataFrame, report_date, baseline_val):
 
 
 def _proposed_this_month(emp: pd.DataFrame, res: pd.DataFrame, report_date):
-    """Row31：本月申请 + LWD 在本月 + 流程未拒（含主动/协商一致）。"""
+    """Row31：本月主动离职申请 + LWD 在本月 + 流程未拒。"""
     roster = []
     if not res.empty:
         seen = set()
         for identity, r in _selected_resignation_rows(emp, res):
+            rtype = str(r.get("resignation_type") or "")
             status = str(r.get("process_status") or "")
+            if not _is_active_type(rtype):
+                continue
             if status in C.get_process_status_rejected():
                 continue
             apply_t = r.get("apply_time")
@@ -633,14 +640,17 @@ def _proposed_last_month_leave_this_month(
     res: pd.DataFrame,
     report_date,
 ):
-    """Row32：上月申请 + LWD 在本月 + 流程未拒（含主动/协商一致）。"""
+    """Row32：上月主动离职申请 + LWD 在本月 + 流程未拒。"""
     hits = []
     prev_m = 12 if report_date.month == 1 else report_date.month - 1
     prev_y = report_date.year - 1 if report_date.month == 1 else report_date.year
     if not res.empty:
         seen = set()
         for identity, r in _selected_resignation_rows(emp, res):
+            rtype = str(r.get("resignation_type") or "")
             status = str(r.get("process_status") or "")
+            if not _is_active_type(rtype):
+                continue
             if status in C.get_process_status_rejected():
                 continue
             apply_t = r.get("apply_time")

@@ -41,6 +41,7 @@ def _bundle(
     report_date: date,
     *,
     resignations: list[dict] | None = None,
+    releases: list[dict] | None = None,
     decisions: tuple[dict, ...] = (),
 ) -> FactBundle:
     return FactBundle(
@@ -49,6 +50,7 @@ def _bundle(
         rule_version="rules-v1",
         employments=pd.DataFrame(employments),
         resignations=pd.DataFrame(resignations or []),
+        releases=pd.DataFrame(releases or []),
         decisions=decisions,
         baseline_rows={8: 0, 9: 0, 13: 0, 14: 0, 30: 0},
         daily_reconciliation={
@@ -198,6 +200,69 @@ def test_daily_active_resignation_counts_selected_person_once():
     result = CalculationAgent().run_daily_bundle(bundle)
 
     assert result["rows"][4]["value"] == 1
+
+
+def test_daily_release_distribution_keeps_passive_out_of_rows31_and32():
+    report_date = date(2026, 7, 29)
+    employments = []
+    resignations = []
+
+    def add_resignation(index, application_date, resignation_type):
+        person_id = f"person-{index}"
+        employee_no = f"FAKE-E{index}"
+        employments.append(
+            _employment(
+                person_id,
+                employee_no,
+                date(2025, 1, 1),
+                source_row_no=index + 2,
+            )
+        )
+        resignations.append(
+            {
+                "person_id": person_id,
+                "process_no": f"FAKE-R{index}",
+                "emp_no": employee_no,
+                "process_status": "审批完成",
+                "resignation_type": resignation_type,
+                "last_working_day": date(2026, 7, 30),
+                "apply_time": pd.Timestamp(application_date),
+                "name": f"测试员工{index}",
+            }
+        )
+
+    for index in range(24):
+        add_resignation(index, date(2026, 7, index + 1), "主动离职")
+    add_resignation(24, date(2026, 7, 29), "协商一致")
+    add_resignation(25, date(2026, 6, 29), "主动离职")
+    add_resignation(26, date(2026, 6, 30), "主动离职")
+    add_resignation(27, date(2026, 6, 28), "协商一致")
+
+    bundle = _bundle(
+        employments,
+        report_date,
+        resignations=resignations,
+        releases=[
+            {
+                "order_no": "FAKE-OLD-OA",
+                "counts_row5": True,
+                "manual_row5_include": True,
+                "in_month_release": True,
+                "lwd_pending": False,
+                "first_seen_batch": date(2026, 6, 23),
+            }
+        ],
+    )
+
+    result = CalculationAgent().run_daily_bundle(bundle)
+
+    assert {row: result["rows"][row]["value"] for row in (5, 30, 31, 32, 33)} == {
+        5: 1,
+        30: 1,
+        31: 24,
+        32: 2,
+        33: 27,
+    }
 
 
 def test_daily_departure_ignores_non_selected_duplicate_employment():

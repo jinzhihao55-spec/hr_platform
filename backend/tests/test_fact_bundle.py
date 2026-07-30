@@ -3,7 +3,7 @@
 from datetime import date
 
 from app.domain.fact_bundle import FactBundle
-from app.pipeline.calculation.daily import _count_release
+from app.pipeline.calculation.daily import _count_release, _release_to_month_end
 from app.models.facts import (
     EmploymentFact,
     PersonIdentity,
@@ -129,9 +129,10 @@ def test_manual_row5_decision_overrides_first_visible_date_without_mutating_it(d
         run_id=run.id,
         source_row_no=4,
         order_no="FAKE-OLD-OA",
+        last_working_day=date(2026, 7, 30),
         first_visible_date=date(2026, 6, 23),
         row5_classification="include",
-        row30_classification="exclude",
+        row30_classification="include",
     )
     decision = RunDecision(
         run_id=run.id,
@@ -151,13 +152,23 @@ def test_manual_row5_decision_overrides_first_visible_date_without_mutating_it(d
         baseline_date=date(2026, 7, 28),
         baseline_rows={},
     )
-    result = _count_release(bundle.releases, run.report_date)
+    row5_result = _count_release(bundle.releases, run.report_date)
+    row30_result = _release_to_month_end(
+        bundle.releases,
+        run.report_date,
+        baseline_val=0,
+    )
 
     assert bundle.releases.loc[0, "first_seen_batch"] == date(2026, 6, 23)
     assert bool(bundle.releases.loc[0, "manual_row5_include"]) is True
-    assert result == {
+    assert row5_result == {
         "count": 1,
         "hits": [{"order_no": "FAKE-OLD-OA", "manual_override": True}],
+    }
+    assert row30_result == {
+        "value": 1,
+        "increment": 1,
+        "hits": [{"order_no": "FAKE-OLD-OA"}],
     }
 
 
