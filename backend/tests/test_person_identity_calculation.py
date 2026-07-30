@@ -202,7 +202,7 @@ def test_daily_active_resignation_counts_selected_person_once():
     assert result["rows"][4]["value"] == 1
 
 
-def test_daily_release_distribution_keeps_passive_out_and_untyped_row32_in():
+def test_daily_release_distribution_excludes_passive_row31_but_includes_row32():
     report_date = date(2026, 7, 29)
     employments = []
     resignations = []
@@ -235,9 +235,8 @@ def test_daily_release_distribution_keeps_passive_out_and_untyped_row32_in():
         add_resignation(index, date(2026, 7, index + 1), "主动离职")
     add_resignation(24, date(2026, 7, 29), "协商一致")
     add_resignation(25, date(2026, 6, 29), "主动离职")
-    # 真实离职明细可能缺少/使用非标准离职类型；Row32 仍按日期口径计入。
-    add_resignation(26, date(2026, 6, 30), "")
-    add_resignation(27, date(2026, 6, 28), "协商一致")
+    # Row32 是上月提出、本月离职的总数；协商一致虽属被动 Release，仍计入。
+    add_resignation(26, date(2026, 6, 30), "协商一致")
 
     bundle = _bundle(
         employments,
