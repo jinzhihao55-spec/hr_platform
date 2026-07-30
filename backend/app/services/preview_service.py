@@ -22,6 +22,7 @@ from app.domain.fact_bundle import FactBundle
 from app.models.facts import decode_json_text, encode_json_text
 from app.models.publication import PublishedReport
 from app.models.runs import ReportRun
+from app.pipeline.calculation import validators
 from app.repositories import report_repo, run_repo
 from app.services.fact_bundle_service import FactBundleService
 from app.services.run_workflow_service import require_current_baseline
@@ -65,6 +66,55 @@ class PreviewSnapshot:
     @property
     def publishable(self) -> bool:
         return self.validation_summary.publishable
+
+
+def _recalculated_validation_summary(
+    run: ReportRun,
+    report_kind: str,
+    bundle: FactBundle,
+    ctx: Mapping[str, Any],
+    published: PreviewSnapshot,
+) -> ValidationSummary:
+    """Summarize replay validations without mutating a published Run."""
+    pending_decisions = [
+        decision
+        for decision in bundle.decisions
+        if decision.get("status") != "answered"
+        and decision.get("report_kind") in {None, report_kind}
+    ]
+    raw_checks = [dict(check) for check in ctx.get("validations") or ()]
+    raw_checks.extend(
+        validators.review_item_as_check(dict(item))
+        for item in ctx.get("review_items") or ()
+    )
+    records = [validators.persisted_validation_record(check) for check in raw_checks]
+    failed = [
+        record
+        for record in records
+        if record["outcome"] != "PASS"
+        and record["severity"] in {"BLOCK", "REVIEW"}
+    ]
+    block_count = sum(record["severity"] == "BLOCK" for record in failed)
+    review_count = sum(record["severity"] == "REVIEW" for record in failed)
+    run_status_blocker = None if run.status == "ready" else run.status
+    return ValidationSummary(
+        run_id=run.id,
+        report_kind=report_kind,
+        publishable=not (
+            run_status_blocker
+            or pending_decisions
+            or block_count
+            or review_count
+        ),
+        target_status=published.validation_summary.target_status,
+        run_status_blocker=run_status_blocker,
+        pending_decision_count=len(pending_decisions),
+        blocking_validation_codes=tuple(
+            sorted(record["validation_code"] for record in failed)
+        ),
+        block_count=block_count,
+        review_count=review_count,
+    )
 
 
 def _published_preview(
@@ -316,6 +366,7 @@ def build_preview(
     week_start: date | None = None,
     week_end: date | None = None,
     persist_preview_hash: bool = True,
+    reuse_published_snapshot: bool = True,
 ) -> PreviewSnapshot:
     started = time.perf_counter()
     last_checkpoint = started
@@ -341,10 +392,11 @@ def build_preview(
         raise LookupError(f"Run {run_id} was not found")
     published = _published_preview(db, run, report_kind)
     checkpoint("published_lookup")
-    if published is not None:
+    if published is not None and reuse_published_snapshot:
         checkpoint("published_snapshot")
         return published
-    require_current_baseline(db, run)
+    if published is None:
+        require_current_baseline(db, run)
     bundle = bundle or _build_bundle(db, run, report_kind)
     checkpoint("fact_bundle")
     if bundle.report_date != run.report_date:
@@ -375,16 +427,26 @@ def build_preview(
         ]
     checkpoint("calculation")
 
-    replace_calculation_validations(
-        db,
-        run.id,
-        report_kind,
-        checks=ctx.get("validations") or (),
-        review_items=ctx.get("review_items") or (),
-    )
-    checkpoint("validation_persistence")
-    summary = validate_run_target(db, run.id, report_kind)
-    checkpoint("target_validation")
+    if published is not None:
+        summary = _recalculated_validation_summary(
+            run,
+            report_kind,
+            bundle,
+            ctx,
+            published,
+        )
+        checkpoint("validation_replay")
+    else:
+        replace_calculation_validations(
+            db,
+            run.id,
+            report_kind,
+            checks=ctx.get("validations") or (),
+            review_items=ctx.get("review_items") or (),
+        )
+        checkpoint("validation_persistence")
+        summary = validate_run_target(db, run.id, report_kind)
+        checkpoint("target_validation")
     events = _safe_events(bundle)
     payload = _payload(
         run, report_kind, period_start, period_end, ctx, events, summary
@@ -404,7 +466,7 @@ def build_preview(
         }
     )
     target = run_repo.ensure_report_targets(db, run.id, (report_kind,))[0]
-    if persist_preview_hash:
+    if persist_preview_hash and published is None:
         target.preview_hash = snapshot_hash
         db.commit()
     checkpoint("snapshot_commit")

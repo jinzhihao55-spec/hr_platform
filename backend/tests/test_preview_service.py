@@ -231,6 +231,71 @@ def test_published_preview_reads_immutable_snapshot_without_recalculation(db, mo
     assert reopened.publishable is True
 
 
+def test_published_daily_preview_can_recalculate_without_mutating_snapshot(db):
+    run = make_run(db, date(2026, 7, 8))
+    original_bundle = make_daily_bundle()
+    original = build_preview(db, run.id, "daily", bundle=original_bundle)
+    report = PublishedReport(
+        run_id=run.id,
+        report_kind="daily",
+        period_start=run.report_date,
+        period_end=run.report_date,
+        version=1,
+        is_current=True,
+        snapshot_json=original.snapshot_json,
+        snapshot_hash=original.snapshot_hash,
+        published_by="test-operator",
+        published_at=datetime(2026, 7, 8, 18, 0, 0),
+    )
+    db.add(report)
+    db.flush()
+    target = db.scalar(
+        select(RunReportTarget).where(
+            RunReportTarget.run_id == run.id,
+            RunReportTarget.report_kind == "daily",
+        )
+    )
+    target.status = TargetStatus.published.value
+    target.published_report_id = report.id
+    db.commit()
+    original_target_summary = target.validation_summary
+
+    second_employee = original_bundle.employments.iloc[0].to_dict()
+    second_employee.update(
+        {
+            "person_key": "fake-person-2",
+            "person_id": "fake-person-2",
+            "emp_no": "FAKE-E2",
+        }
+    )
+    updated_bundle = replace(
+        original_bundle,
+        employments=pd.concat(
+            [original_bundle.employments, pd.DataFrame([second_employee])],
+            ignore_index=True,
+        ),
+    )
+
+    recalculated = build_preview(
+        db,
+        run.id,
+        "daily",
+        bundle=updated_bundle,
+        reuse_published_snapshot=False,
+    )
+
+    db.refresh(report)
+    db.refresh(target)
+    assert original.rows[2].value == 1
+    assert recalculated.rows[2].value == 2
+    assert recalculated.snapshot_hash != original.snapshot_hash
+    assert report.snapshot_json == original.snapshot_json
+    assert report.snapshot_hash == original.snapshot_hash
+    assert target.status == TargetStatus.published.value
+    assert target.preview_hash == original.snapshot_hash
+    assert target.validation_summary == original_target_summary
+
+
 def test_published_weekly_preview_preserves_export_period_context(db, monkeypatch):
     run = make_run(db, date(2026, 7, 10))
     bundle = make_weekly_bundle()

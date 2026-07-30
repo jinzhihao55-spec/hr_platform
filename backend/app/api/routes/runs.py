@@ -13,6 +13,7 @@ from fastapi import (
     HTTPException,
     Query,
     Request,
+    Response,
     UploadFile,
     status,
 )
@@ -322,9 +323,21 @@ def post_decision(
 
 
 @router.get("/runs/{run_id}/preview/daily", response_model=PreviewResponse)
-def preview_daily(run_id: str, db: Session = Depends(get_db)):
+def preview_daily(
+    run_id: str,
+    response: Response,
+    db: Session = Depends(get_db),
+):
+    response.headers["Cache-Control"] = "no-store"
     try:
-        return _preview_response(build_preview(db, run_id, "daily"))
+        return _preview_response(
+            build_preview(
+                db,
+                run_id,
+                "daily",
+                reuse_published_snapshot=False,
+            )
+        )
     except LookupError as exc:
         raise _not_found(exc) from exc
     except run_workflow_service.StaleRunBaseline as exc:
