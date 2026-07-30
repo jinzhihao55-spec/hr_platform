@@ -3,6 +3,7 @@
 from datetime import date
 
 from app.domain.fact_bundle import FactBundle
+from app.pipeline.calculation.daily import _count_release
 from app.models.facts import (
     EmploymentFact,
     PersonIdentity,
@@ -114,6 +115,50 @@ def test_fact_bundle_service_maps_run_facts_without_certificate_plaintext(db):
     )
     assert "证件号" not in all_columns
     assert "certificate_number" not in all_columns
+
+
+def test_manual_row5_decision_overrides_first_visible_date_without_mutating_it(db):
+    run = ReportRun(
+        report_date=date(2026, 7, 29),
+        status=RunStatus.ready.value,
+        rule_version="rules-v1",
+    )
+    db.add(run)
+    db.flush()
+    fact = ReleaseFact(
+        run_id=run.id,
+        source_row_no=4,
+        order_no="FAKE-OLD-OA",
+        first_visible_date=date(2026, 6, 23),
+        row5_classification="include",
+        row30_classification="exclude",
+    )
+    decision = RunDecision(
+        run_id=run.id,
+        report_kind=None,
+        decision_code="release_row5_classification_required",
+        fact_ref="source:release:row:4",
+        question="是否计入 Row5？",
+        options=encode_json_text(["计入Row5", "不计入Row5"]),
+        status="answered",
+        answer=encode_json_text("计入Row5"),
+    )
+    db.add_all([fact, decision])
+    db.commit()
+
+    bundle = FactBundleService(db).build(
+        run.id,
+        baseline_date=date(2026, 7, 28),
+        baseline_rows={},
+    )
+    result = _count_release(bundle.releases, run.report_date)
+
+    assert bundle.releases.loc[0, "first_seen_batch"] == date(2026, 6, 23)
+    assert bool(bundle.releases.loc[0, "manual_row5_include"]) is True
+    assert result == {
+        "count": 1,
+        "hits": [{"order_no": "FAKE-OLD-OA", "manual_override": True}],
+    }
 
 
 def test_fact_bundle_copies_mutable_frames():

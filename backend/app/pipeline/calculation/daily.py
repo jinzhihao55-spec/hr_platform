@@ -556,14 +556,18 @@ def _is_active_type(rtype: str) -> bool:
 
 
 def _count_release(agr: pd.DataFrame, report_date):
-    """Row5：今日首次可见且计入 Row5=是（Q5：无 LWD 仅进 Row5）。"""
+    """Row5：今日首次可见并计入；HR 人工明确计入时优先于日期过滤。"""
     hits = []
     if agr.empty:
         return {"count": 0, "hits": hits}
     seen = set()
     for _, r in agr.iterrows():
         fsb = r.get("first_seen_batch")
-        if (fsb if isinstance(fsb, date) else None) != report_date:
+        manual_include = bool(r.get("manual_row5_include"))
+        if (
+            not manual_include
+            and (fsb if isinstance(fsb, date) else None) != report_date
+        ):
             continue
         if not bool(r.get("counts_row5")):
             continue
@@ -571,7 +575,7 @@ def _count_release(agr: pd.DataFrame, report_date):
         if ono in seen:
             continue
         seen.add(ono)
-        hits.append({"order_no": ono})
+        hits.append({"order_no": ono, "manual_override": manual_include})
     return {"count": len(hits), "hits": hits}
 
 

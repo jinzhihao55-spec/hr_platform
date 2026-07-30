@@ -60,6 +60,7 @@ _RELEASE_COLUMNS = (
     "order_no",
     "is_release",
     "counts_row5",
+    "manual_row5_include",
     "in_month_release",
     "lwd_pending",
     "first_seen_batch",
@@ -234,6 +235,26 @@ class FactBundleService:
         ]
 
     def _release_rows(self, run_id: str) -> list[dict[str, Any]]:
+        manual_row5_rows: set[int] = set()
+        decisions = self.db.scalars(
+            select(RunDecision).where(
+                RunDecision.run_id == run_id,
+                RunDecision.decision_code
+                == "release_row5_classification_required",
+                RunDecision.status == "answered",
+                RunDecision.is_deleted == 0,
+            )
+        ).all()
+        for decision in decisions:
+            parts = (decision.fact_ref or "").split(":")
+            if (
+                len(parts) == 4
+                and parts[:3] == ["source", "release", "row"]
+                and parts[3].isdigit()
+                and decode_json_text(decision.answer) == "计入Row5"
+            ):
+                manual_row5_rows.add(int(parts[3]))
+
         records = self.db.scalars(
             select(ReleaseFact)
             .where(ReleaseFact.run_id == run_id)
@@ -244,6 +265,7 @@ class FactBundleService:
                 "order_no": fact.order_no,
                 "is_release": fact.row5_classification == "include",
                 "counts_row5": fact.row5_classification == "include",
+                "manual_row5_include": fact.source_row_no in manual_row5_rows,
                 "in_month_release": fact.row30_classification == "include",
                 "lwd_pending": fact.row30_classification == "review",
                 "first_seen_batch": fact.first_visible_date,
