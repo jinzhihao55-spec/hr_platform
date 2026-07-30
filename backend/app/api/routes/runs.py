@@ -86,6 +86,10 @@ def _preview_response(snapshot: PreviewSnapshot) -> dict:
             }
             for number, row in snapshot.rows.items()
         },
+        "baseline_rows": {
+            str(number): value
+            for number, value in snapshot.baseline_rows.items()
+        },
         "main_rows": list(snapshot.main_rows),
         "cc_rows": list(snapshot.cc_rows),
         "tenure": dict(snapshot.tenure),

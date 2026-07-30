@@ -2,6 +2,7 @@
 
 from dataclasses import replace
 from datetime import date, datetime
+from types import SimpleNamespace
 
 import pandas as pd
 from sqlalchemy import func, select
@@ -10,7 +11,15 @@ from app.domain.fact_bundle import FactBundle
 from app.agents.calculation_agent import CalculationAgent
 from app.models.publication import PublishedReport
 from app.models.reports import DailyReport, WeeklyReport
-from app.models.runs import ReportRun, RunReportTarget, RunStatus, TargetStatus
+from app.models.runs import (
+    ReportRun,
+    RunReportTarget,
+    RunSource,
+    RunStatus,
+    SourceType,
+    TargetStatus,
+)
+from app.services import preview_service
 from app.services.preview_service import PreviewSnapshot, build_preview
 
 
@@ -294,6 +303,103 @@ def test_published_daily_preview_can_recalculate_without_mutating_snapshot(db):
     assert target.status == TargetStatus.published.value
     assert target.preview_hash == original.snapshot_hash
     assert target.validation_summary == original_target_summary
+
+
+def test_next_run_replays_four_source_published_baseline_without_mutating_it(
+    db, monkeypatch
+):
+    baseline_run = make_run(db, date(2026, 7, 29))
+    baseline_run.source_bundle_hash = "a" * 64
+    for source_type in SourceType:
+        db.add(
+            RunSource(
+                run_id=baseline_run.id,
+                source_type=source_type.value,
+                sha256=source_type.value.ljust(64, "0"),
+                schema_version="test-v1",
+                parser_version="test-v1",
+                media_type="application/octet-stream",
+                row_count=1,
+                parse_status="parsed",
+            )
+        )
+    old_snapshot = {
+        "rows": {
+            "8": {"value": 44},
+            "9": {"value": 20},
+            "13": {"value": 203},
+            "14": {"value": 143},
+            "30": {"value": 0},
+            "31": {"value": 25},
+            "32": {"value": 2},
+            "33": {"value": 27},
+        },
+        "tenure": {"rows": []},
+    }
+    report = PublishedReport(
+        run_id=baseline_run.id,
+        report_kind="daily",
+        period_start=baseline_run.report_date,
+        period_end=baseline_run.report_date,
+        version=1,
+        is_current=True,
+        snapshot_json=preview_service.encode_json_text(old_snapshot),
+        snapshot_hash="b" * 64,
+        published_by="test-operator",
+        published_at=datetime(2026, 7, 29, 18, 0, 0),
+    )
+    db.add(report)
+    db.flush()
+    current_run = make_run(db, date(2026, 7, 30))
+    current_run.baseline_report_id = report.id
+    db.commit()
+
+    replayed_rows = {
+        number: SimpleNamespace(value=value)
+        for number, value in {
+            8: 44,
+            9: 20,
+            13: 203,
+            14: 143,
+            30: 1,
+            31: 24,
+            32: 2,
+            33: 27,
+        }.items()
+    }
+    calls = []
+
+    def fake_build_preview(_db, run_id, report_kind, **kwargs):
+        calls.append((run_id, report_kind, kwargs))
+        return SimpleNamespace(rows=replayed_rows, tenure={"rows": []})
+
+    monkeypatch.setattr(preview_service, "build_preview", fake_build_preview)
+
+    baseline_date, rows, _, _ = preview_service._baseline_from_published(
+        db, current_run
+    )
+
+    db.refresh(report)
+    assert baseline_date == date(2026, 7, 29)
+    assert {row: rows[row] for row in (30, 31, 32, 33)} == {
+        30: 1,
+        31: 24,
+        32: 2,
+        33: 27,
+    }
+    assert calls == [
+        (
+            baseline_run.id,
+            "daily",
+            {
+                "persist_preview_hash": False,
+                "reuse_published_snapshot": False,
+                "replay_published_baseline": False,
+            },
+        )
+    ]
+    assert report.snapshot_json == preview_service.encode_json_text(old_snapshot)
+    assert report.snapshot_hash == "b" * 64
 
 
 def test_published_weekly_preview_preserves_export_period_context(db, monkeypatch):

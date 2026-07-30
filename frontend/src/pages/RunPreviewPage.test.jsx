@@ -150,6 +150,24 @@ describe('RunPreviewPage', () => {
     expect(screen.getByRole('button', { name: '发布周报' })).toBeDisabled();
   });
 
+  it('shows the recalculated baseline returned by the daily preview', async () => {
+    getRunPreview.mockImplementation((_runId, reportKind) => {
+      const result = preview(reportKind, reportKind === 'daily');
+      return Promise.resolve(
+        reportKind === 'daily'
+          ? { ...result, baseline_rows: { '2': 0 } }
+          : result,
+      );
+    });
+    renderPreview();
+
+    const row = (await screen.findByText('今日入职')).closest('tr');
+    const cells = within(row).getAllByRole('cell');
+    expect(cells[2]).toHaveTextContent('0');
+    expect(cells[3]).toHaveTextContent('2');
+    expect(cells[4]).toHaveTextContent('+2');
+  });
+
   it('serializes stateful daily and weekly preview calculations', async () => {
     let resolveDaily;
     getRunPreview.mockImplementation((_runId, reportKind) => {

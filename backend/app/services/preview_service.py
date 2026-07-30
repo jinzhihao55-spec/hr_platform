@@ -21,7 +21,7 @@ from app.core.exceptions import BaselineMissingError
 from app.domain.fact_bundle import FactBundle
 from app.models.facts import decode_json_text, encode_json_text
 from app.models.publication import PublishedReport
-from app.models.runs import ReportRun
+from app.models.runs import ReportRun, RunSource, SourceType
 from app.pipeline.calculation import validators
 from app.repositories import report_repo, run_repo
 from app.services.fact_bundle_service import FactBundleService
@@ -242,8 +242,11 @@ def _safe_events(bundle: FactBundle) -> tuple[dict[str, Any], ...]:
 
 
 def _baseline_from_published(
-    db: Session, run: ReportRun
-) -> tuple[date, dict[int, int], date | None, tuple[dict[str, Any], ...]] | None:
+    db: Session,
+    run: ReportRun,
+    *,
+    replay_latest_rules: bool = True,
+) -> tuple[date, dict[int, Any], date | None, tuple[dict[str, Any], ...]] | None:
     if not run.baseline_report_id:
         return None
     report = db.get(PublishedReport, run.baseline_report_id)
@@ -253,10 +256,55 @@ def _baseline_from_published(
     rows = payload.get("rows") or {}
     required = (8, 9, 13, 14, 30)
     baseline = {
-        row: int((rows.get(str(row)) or {}).get("value") or 0) for row in required
+        int(number): info.get("value")
+        for number, info in rows.items()
+        if isinstance(info, Mapping)
     }
+    for row in required:
+        baseline[row] = int(baseline.get(row) or 0)
     tenure = payload.get("tenure") or {}
     tenure_rows = tuple(dict(row) for row in tenure.get("rows") or ())
+
+    baseline_run = db.get(ReportRun, report.run_id) if report.run_id else None
+    required_sources = {source_type.value for source_type in SourceType}
+    available_sources = set()
+    if baseline_run is not None:
+        available_sources = set(
+            db.scalars(
+                select(RunSource.source_type).where(
+                    RunSource.run_id == baseline_run.id,
+                    RunSource.is_deleted == 0,
+                )
+            ).all()
+        )
+    replayable = (
+        replay_latest_rules
+        and baseline_run is not None
+        and baseline_run.id != run.id
+        and baseline_run.report_date == report.period_end
+        and required_sources.issubset(available_sources)
+    )
+    if replayable:
+        try:
+            replayed = build_preview(
+                db,
+                baseline_run.id,
+                "daily",
+                persist_preview_hash=False,
+                reuse_published_snapshot=False,
+                replay_published_baseline=False,
+            )
+        except Exception as exc:
+            log.exception(
+                "failed to replay published baseline run=%s report=%s",
+                baseline_run.id,
+                report.id,
+            )
+            raise BaselineMissingError("前一日基线无法按最新规则重新计算") from exc
+        baseline = {number: row.value for number, row in replayed.rows.items()}
+        for row in required:
+            baseline[row] = int(baseline.get(row) or 0)
+        tenure_rows = tuple(dict(row) for row in replayed.tenure.get("rows") or ())
     return report.period_end, baseline, report.period_end, tenure_rows
 
 
@@ -276,9 +324,19 @@ def _daily_reconciliation(db: Session, week_start: date, week_end: date) -> dict
     }
 
 
-def _build_bundle(db: Session, run: ReportRun, report_kind: str) -> FactBundle:
+def _build_bundle(
+    db: Session,
+    run: ReportRun,
+    report_kind: str,
+    *,
+    replay_published_baseline: bool = True,
+) -> FactBundle:
     bundle_started = time.perf_counter()
-    published = _baseline_from_published(db, run)
+    published = _baseline_from_published(
+        db,
+        run,
+        replay_latest_rules=(report_kind == "daily" and replay_published_baseline),
+    )
     log.info(
         "preview bundle run=%s kind=%s stage=baseline seconds=%.3f",
         run.id,
@@ -367,6 +425,7 @@ def build_preview(
     week_end: date | None = None,
     persist_preview_hash: bool = True,
     reuse_published_snapshot: bool = True,
+    replay_published_baseline: bool = True,
 ) -> PreviewSnapshot:
     started = time.perf_counter()
     last_checkpoint = started
@@ -397,7 +456,12 @@ def build_preview(
         return published
     if published is None:
         require_current_baseline(db, run)
-    bundle = bundle or _build_bundle(db, run, report_kind)
+    bundle = bundle or _build_bundle(
+        db,
+        run,
+        report_kind,
+        replay_published_baseline=replay_published_baseline,
+    )
     checkpoint("fact_bundle")
     if bundle.report_date != run.report_date:
         raise ValueError("FactBundle report_date does not match Run")

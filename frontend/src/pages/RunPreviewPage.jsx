@@ -39,10 +39,14 @@ function baselineLabel(periodEnd, version) {
 
 function dailyRows(preview, baselineReport) {
   const current = preview?.rows || {};
-  const baseline = baselineReport?.snapshot?.rows || {};
+  const publishedBaseline = baselineReport?.snapshot?.rows || {};
+  const replayedBaseline = preview?.baseline_rows || {};
+  const hasReplayedBaseline = Object.keys(replayedBaseline).length > 0;
   return Object.entries(current)
     .map(([number, row]) => {
-      const baselineValue = baseline[number]?.value;
+      const baselineValue = hasReplayedBaseline
+        ? replayedBaseline[number]
+        : publishedBaseline[number]?.value;
       return {
         number: Number(number),
         label: row.label || '',
