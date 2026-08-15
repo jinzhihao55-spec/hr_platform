@@ -540,7 +540,7 @@ def build_preview(
         }
     )
     target = run_repo.ensure_report_targets(db, run.id, (report_kind,))[0]
-    if persist_preview_hash and published is None:
+    if persist_preview_hash:
         target.preview_hash = snapshot_hash
         db.commit()
     checkpoint("snapshot_commit")

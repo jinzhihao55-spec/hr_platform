@@ -71,3 +71,12 @@ export function publishRun(runId, reportKinds) {
     timeout: 180000,
   });
 }
+
+export function overrideDailyBaseline(reportDate, file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  return apiClient.post(`/reports/daily/${reportDate}/baseline-override`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 180000,
+  });
+}

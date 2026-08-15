@@ -44,7 +44,11 @@ class FactBundle:
             self,
             "baseline_rows",
             MappingProxyType(
-                {int(row): int(value) for row, value in self.baseline_rows.items()}
+                {
+                    int(row): int(value)
+                    for row, value in self.baseline_rows.items()
+                    if value is not None
+                }
             ),
         )
         object.__setattr__(

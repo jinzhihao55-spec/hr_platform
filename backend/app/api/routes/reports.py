@@ -166,6 +166,27 @@ async def import_daily(
     )
 
 
+@router.post("/daily/{report_date}/baseline-override", response_model=ImportDailyResponse)
+async def override_daily_baseline(
+    report_date: date,
+    request: Request,
+    file: UploadFile = File(..., description="调整后的日报 xlsx"),
+    db: Session = Depends(get_db),
+):
+    """上传用户手动调整后的日报 xlsx 作为新的链式基线。
+
+    系统以用户上传的调整后日报为准，覆盖 daily_reports 中该日期的数据，
+    并自动级联重算后续所有日报和周报。上传的调整日报跳过校验（视为人工验收），
+    级联重算的后续报表走正常校验。
+    """
+    operator = (
+        request.headers.get("x-authenticated-user") or "local-operator"
+    ).strip()
+    return await daily_import_service.override_daily_baseline(
+        db, report_date, file, imported_by=operator
+    )
+
+
 @router.get("/weekly/weeks")
 def weekly_weeks(db: Session = Depends(get_db)):
     """周报页周次选择器：已生成周报的周次列表（倒序）。"""

@@ -11,6 +11,7 @@ import {
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import RunStepper from '../components/run/RunStepper';
 import BaselineImportPanel from '../components/run/BaselineImportPanel';
+import BaselineOverridePanel from '../components/run/BaselineOverridePanel';
 import SourceUploadGrid from '../components/run/SourceUploadGrid';
 import {
   createRevisionRun,
@@ -175,6 +176,11 @@ export default function RunWorkspacePage() {
     await loadRun();
   };
 
+  const baselineOverridden = async (_result) => {
+    setBaselineNotice('基线已覆盖，后续报表已级联重算');
+    await loadRun();
+  };
+
   if (loading && !run) {
     return <main className="run-page run-page-state" role="status">正在加载运行记录…</main>;
   }
@@ -308,6 +314,10 @@ export default function RunWorkspacePage() {
           {!run.baseline_report_id && !initialBaselinePublished && (
             <BaselineImportPanel run={run} onImported={baselineImported} />
           )}
+          <BaselineOverridePanel
+            reportDate={run.report_date}
+            onOverridden={baselineOverridden}
+          />
         </div>
 
         <aside className="run-summary" aria-label="运行摘要">

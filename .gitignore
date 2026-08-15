@@ -27,6 +27,7 @@ data/*.db
 .env
 .env.local
 .env.*.local
+backend/.env.production
 
 # ── 日志 ──
 *.log
@@ -55,3 +56,38 @@ htmlcov/
 .trae-html-share-packages/
 *.zip
 output/
+
+# ── 文档/报告（本地保留，不上传 GitHub） ──
+DEPLOYMENT_GUIDE.md
+HR_Agent_上下文交接_20260721.md
+USER_MANUAL*.md
+USER_MANUAL*.html
+USER_MANUAL*.pdf
+USER_MANUAL*.pptx
+服务器缺陷与部署注意事项_20260721.md
+测试计划_v1_7_21.md
+v1_7_21_Release_Report.pdf
+v1_7_21_User_Manual.pdf
+migrate_artifact_paths.py
+fix_weekly_dedup.ps1
+
+# ── 截图/测试报告（本地保留，不上传 GitHub） ──
+manual_screenshots/
+网页截图/
+v1_7_21_test_report/
+deploy/windows_apply_20260724.ps1
+
+# Obsidian per-device UI state
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/cache/
+
+# ── Agent / IDE 本地状态与服务器增量包 ──
+.agent-handoff.json
+.obsidian/
+.trae/
+knowledge/
+7.28/
+7.30/
+deploy_packages/
+微信图片_*.png

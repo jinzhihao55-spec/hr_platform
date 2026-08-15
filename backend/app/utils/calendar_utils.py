@@ -55,6 +55,19 @@ def is_last_workday_of_week(d: date) -> bool:
     return is_workday(d) and d == last_workday_of_week(d)
 
 
+def is_last_workday_of_month(d: date) -> bool:
+    """d 是否该月最后一个工作日。"""
+    # 从当月最后一天向前找第一个工作日
+    next_month = d.replace(day=28) + timedelta(days=4)  # 保证进入下月
+    last_day = next_month.replace(day=1) - timedelta(days=1)
+    cur = last_day
+    for _ in range(10):
+        if is_workday(cur):
+            return d == cur
+        cur -= timedelta(days=1)
+    return False
+
+
 def calendar_known(d: date) -> bool:
     """d 的节假日信息是否可得（可得则无需询问用户）。"""
     if not _HAS_CN:

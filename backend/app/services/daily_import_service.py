@@ -24,6 +24,7 @@ from app.models.runs import (
     SourceType,
     TargetStatus,
 )
+from app.pipeline.calculation.tenure import compute_tenure
 from app.pipeline.input.daily_workbook import parse_daily_workbook, parse_tenure_workbook
 from app.repositories import publication_repo, report_repo
 from app.services.fact_history_service import materialize_initial_history
@@ -343,6 +344,94 @@ async def finalize_initial_run_baseline(
             "kpis": _kpis(rows),
             "cascaded": [],
         }
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+async def override_daily_baseline(
+    db: Session,
+    report_date: date,
+    file: UploadFile,
+    imported_by: str = "local-operator",
+) -> dict:
+    """上传用户手动调整后的日报 xlsx 作为新的链式基线。
+
+    与 import_daily 的关键区别：
+    - 跳过在岗时长交叉校验（用户调整后的 Row14 可能与源数据不一致）
+    - 在岗时长从源数据（employees/resignations 表）重新计算，确保级联自洽
+    - 发布快照标记为 manual_baseline_override
+    - 始终执行级联重算后续报表
+    """
+    overwritten = report_repo.daily_exists(db, report_date)
+    tmp = Path(tempfile.mkdtemp(prefix="hr_baseline_override_"))
+    safe_name = Path(file.filename or "").name or f"daily_{report_date}.xlsx"
+    dest = tmp / safe_name
+    try:
+        with dest.open("wb") as f:
+            shutil.copyfileobj(file.file, f)
+
+        # 1. 解析用户调整后的日报 xlsx
+        rows, _ = parse_daily_workbook(dest, report_date)
+        # 不校验 tenure 交叉，用户调整视为人工验收
+
+        # 2. 从源数据重新计算在岗时长（确保 B10 与级联重算的 Row14 口径自洽）
+        tenure_result = compute_tenure(db, report_date)
+        tenure_rows = tenure_result["rows"]
+        b10_total = tenure_result["b10"]
+        log.info(
+            "基线覆盖 %s：在岗时长已从源数据重算，B10=%d，Row14=%d",
+            report_date, b10_total, int(rows[14]["value"]),
+        )
+
+        protected_dir: Path | None = None
+        try:
+            # 3. 更新 daily_reports 表
+            report_repo.save_daily(db, report_date, rows, commit=False)
+            # 4. 更新在岗时长快照（以源数据计算为准）
+            report_repo.save_tenure_snapshot(
+                db, report_date, tenure_rows, commit=False,
+            )
+            # 5. 创建发布快照
+            baseline, protected_dir = _register_formal_baseline(
+                db,
+                report_date,
+                rows,
+                tenure_rows,
+                dest,
+                imported_by,
+                source="manual_baseline_override",
+            )
+            db.commit()
+        except Exception:
+            db.rollback()
+            if protected_dir is not None:
+                _remove_protected_dir(protected_dir)
+            raise
+
+        _write_compatibility_copy(dest, report_date)
+
+        # 6. 级联重算后续报表
+        cascaded: list[dict] = []
+        cascade_error: str | None = None
+        from app.services import report_service
+        try:
+            cascaded = report_service.cascade_later(db, report_date)
+        except Exception:
+            log.exception("基线覆盖 %s 后级联重算失败（覆盖本身已成功）", report_date)
+            cascade_error = "基线已覆盖，但后续日报级联重算未完成，请查看服务日志后重试"
+
+        result = {
+            "report_date": report_date.isoformat(),
+            "status": "partial" if cascade_error else "succeeded",
+            "overwritten": overwritten,
+            "rows_imported": len(rows),
+            "baseline_report_id": baseline.id,
+            "kpis": _kpis(rows),
+            "cascaded": cascaded,
+        }
+        if cascade_error:
+            result["cascade_error"] = cascade_error
+        return result
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 

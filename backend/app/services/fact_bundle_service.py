@@ -54,6 +54,7 @@ _RESIGNATION_COLUMNS = (
     "resignation_type",
     "last_working_day",
     "apply_time",
+    "application_date",
     "name",
 )
 _RELEASE_COLUMNS = (
@@ -227,6 +228,11 @@ class FactBundleService:
                     pd.Timestamp(fact.first_visible_date or fact.application_date)
                     if fact.first_visible_date is not None
                     or fact.application_date is not None
+                    else None
+                ),
+                "application_date": (
+                    pd.Timestamp(fact.application_date)
+                    if fact.application_date is not None
                     else None
                 ),
                 "name": names.get(fact.employee_no or ""),

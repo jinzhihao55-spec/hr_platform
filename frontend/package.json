@@ -29,5 +29,8 @@
     "oxlint": "^1.69.0",
     "vite": "^8.1.0",
     "vitest": "^4.1.10"
+  },
+  "optionalDependencies": {
+    "@rolldown/binding-linux-arm64-gnu": "^1.2.1"
   }
 }

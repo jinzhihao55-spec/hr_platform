@@ -7,6 +7,7 @@ import re
 from typing import Any
 
 from app.core import constants as C
+from app.utils import calendar_utils as cal
 
 
 def _v(row: dict, n: int) -> float:
@@ -35,12 +36,18 @@ def run_daily_checks(ctx: dict[str, Any]) -> list[dict]:
     check("Row33=Row30+Row31+Row32",
           _v(rows, 33) == _v(rows, 30) + _v(rows, 31) + _v(rows, 32), True,
           row33=_v(rows, 33), sum=_v(rows, 30) + _v(rows, 31) + _v(rows, 32))
-    check("Row19=Row33", _v(rows, 19) == _v(rows, 33), True,
-          row19=_v(rows, 19), row33=_v(rows, 33))
     check("Row40=Row37+Row38+Row39",
           _v(rows, 40) == _v(rows, 37) + _v(rows, 38) + _v(rows, 39), True)
     check("Row37=Row8(MTD入职)", _v(rows, 37) == _v(rows, 8), True,
           row37=_v(rows, 37), row8=_v(rows, 8))
+    # 月末最后一个工作日：预估离职 = 实际 MTD
+    report_date = ctx.get("report_date")
+    if report_date is not None and cal.is_last_workday_of_month(report_date):
+        check("Row19=Row9(月末预估=实际)", _v(rows, 19) == _v(rows, 9), True,
+              row19=_v(rows, 19), row9=_v(rows, 9))
+    else:
+        check("Row19=Row33", _v(rows, 19) == _v(rows, 33), True,
+              row19=_v(rows, 19), row33=_v(rows, 33))
     check("Row18=Row40", _v(rows, 18) == _v(rows, 40), True,
           left=_v(rows, 18), right=_v(rows, 40))
 

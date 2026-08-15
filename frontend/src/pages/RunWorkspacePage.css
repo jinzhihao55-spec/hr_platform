@@ -380,6 +380,132 @@
   font-size: 10.5px;
 }
 
+/* --- Baseline Override Panel --- */
+.baseline-override {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 13px 14px;
+  border-left: 3px solid #4a7fb5;
+  background: #eef5fb;
+}
+
+.baseline-override-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.baseline-override-heading strong {
+  color: #2c5f8a;
+  font-size: 12px;
+}
+
+.baseline-override-heading p {
+  margin: 3px 0 0;
+  color: #5a6f82;
+  font-size: 10.5px;
+}
+
+.baseline-override-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: #fef0f0;
+  color: #b53131;
+  font-size: 11px;
+}
+
+.baseline-override-result {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.baseline-override-success {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #2a7d3f;
+  font-size: 11.5px;
+  font-weight: 650;
+}
+
+.baseline-override-kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 12px;
+  margin: 0;
+  padding: 10px;
+  background: #fff;
+  border-radius: 6px;
+  border: 1px solid #d5e3f2;
+}
+
+.baseline-override-kpis div {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.baseline-override-kpis dt {
+  color: #5a6f82;
+  font-size: 10.5px;
+  font-weight: 500;
+}
+
+.baseline-override-kpis dd {
+  margin: 0;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.baseline-override-cascade {
+  padding: 8px 10px;
+  background: #fff;
+  border-radius: 6px;
+  border: 1px solid #d5e3f2;
+}
+
+.baseline-override-cascade p {
+  margin: 0 0 6px;
+  color: #4a6a85;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+.baseline-override-cascade ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+
+.baseline-override-cascade li {
+  font-size: 10.5px;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.cascade-ok {
+  color: #2a7d3f;
+  font-weight: 700;
+}
+
+.cascade-fail {
+  color: #b53131;
+  font-size: 10px;
+}
+
 .source-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1000,6 +1126,14 @@
 
   .baseline-upload {
     justify-content: center;
+  }
+
+  .baseline-override {
+    gap: 10px;
+  }
+
+  .baseline-override-kpis {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .run-section-heading,

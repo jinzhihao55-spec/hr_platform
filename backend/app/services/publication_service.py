@@ -380,19 +380,23 @@ def _publish_one(
 
     target = run_repo.ensure_report_targets(db, run.id, (report_kind,))[0]
     existing_report = db.scalar(
-        select(PublishedReport.id).where(
+        select(PublishedReport).where(
             PublishedReport.run_id == run.id,
             PublishedReport.report_kind == report_kind,
             PublishedReport.is_deleted == 0,
         )
     )
-    if existing_report is not None:
-        raise PublicationFailed(
-            f"{report_kind} was already published for this run; create a revision run"
-        )
     expected_hash = target.preview_hash
     if not expected_hash:
         raise PreviewRequired(f"{report_kind} must be previewed before publication")
+    # 同 Run 已发布同 snapshot → 幂等返回已发布的报告
+    if existing_report is not None:
+        if existing_report.snapshot_hash == expected_hash:
+            log.info("%s was already published with the same snapshot, returning existing report", report_kind)
+            return existing_report
+        raise PublicationFailed(
+            f"{report_kind} was already published for this run; create a revision run"
+        )
     week_start = period[0] if period else None
     week_end = period[1] if period else None
     snapshot = build_preview(
@@ -403,6 +407,7 @@ def _publish_one(
         week_start=week_start,
         week_end=week_end,
         persist_preview_hash=False,
+        reuse_published_snapshot=False,
     )
     checkpoint("preview")
     if snapshot.snapshot_hash != expected_hash:

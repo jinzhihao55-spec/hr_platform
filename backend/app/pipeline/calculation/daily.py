@@ -8,7 +8,7 @@ Row2/Row3 使用 hire_first_visible_date / resign_first_visible_date 处理
 from __future__ import annotations
 
 from collections.abc import Mapping
-from datetime import date
+from datetime import date, datetime
 from typing import Any
 
 import pandas as pd
@@ -19,6 +19,7 @@ from app.core import constants as C
 from app.core.exceptions import BaselineMissingError
 from app.core.logging import get_logger
 from app.repositories import report_repo
+from app.utils import calendar_utils as cal
 from app.utils.dates import same_month, to_int
 
 log = get_logger("calc.daily")
@@ -156,13 +157,20 @@ def compute_daily(
     emit(30, r30["value"], formula="Row30=昨日Row30+今日首次可见且计入Row30=是",
          baseline=baseline.get(30, 0), increment=r30["increment"], hits=r30["hits"])
     r31 = _proposed_this_month(emp, res, report_date)
-    emit(31, r31["count"], formula="本月申请+LWD在本月+流程未拒(含协商一致)",
-         hits=r31["hits"], roster=r31["roster"])
     r32 = _proposed_last_month_leave_this_month(emp, res, report_date)
-    emit(32, r32["count"], formula="上月申请+LWD在本月+流程未拒", hits=r32["hits"])
-    emit(33, rows[30]["value"] + rows[31]["value"] + rows[32]["value"],
-         formula="Row33=Row30+Row31+Row32",
-         row30=rows[30]["value"], row31=rows[31]["value"], row32=rows[32]["value"])
+    # 月末最后一个工作日：Row31/R33 收敛到实际 MTD，消除名单错位
+    if cal.is_last_workday_of_month(report_date):
+        r31_count = rows[9]["value"] - rows[30]["value"] - r32["count"]
+        emit(31, r31_count, formula="Row31=Row9-Row30-Row32(月末收敛)")
+        emit(32, r32["count"], formula="上月申请+LWD在本月+流程未拒", hits=r32["hits"])
+        emit(33, rows[9]["value"], formula="Row33=Row9(月末收敛)")
+    else:
+        emit(31, r31["count"], formula="本月申请+LWD在本月+流程未拒(含协商一致)",
+             hits=r31["hits"], roster=r31["roster"])
+        emit(32, r32["count"], formula="上月申请+LWD在本月+流程未拒", hits=r32["hits"])
+        emit(33, rows[30]["value"] + rows[31]["value"] + rows[32]["value"],
+             formula="Row33=Row30+Row31+Row32",
+             row30=rows[30]["value"], row31=rows[31]["value"], row32=rows[32]["value"])
 
     # ----- §3.8 招聘预估入职链路 -----
     r38 = _recruitment_value(rec, "prev_month_offer_curr_join")
@@ -178,7 +186,11 @@ def compute_daily(
 
     # ----- §3.5 本月预估区 -----
     emit(18, rows[40]["value"], formula="Row18=Row40")
-    emit(19, rows[33]["value"], formula="Row19=Row33")
+    # 月末最后一个工作日：预估离职 = 实际 MTD
+    if cal.is_last_workday_of_month(report_date):
+        emit(19, rows[9]["value"], formula="Row19=Row9(月最后工作日，预估=实际)")
+    else:
+        emit(19, rows[33]["value"], formula="Row19=Row33")
     emit(20, 0, formula="同Row10")
     emit(21, 0, formula="同Row11")
     emit(22, rows[18]["value"] - rows[19]["value"] - rows[20]["value"] + rows[21]["value"],
@@ -606,6 +618,22 @@ def _release_to_month_end(agr: pd.DataFrame, report_date, baseline_val):
     return {"value": (baseline_val or 0) + inc, "increment": inc, "hits": hits}
 
 
+def _apply_date(r: pd.Series | dict) -> date | None:
+    """Row31/Row32 申请月份判定用真实的申请日期，不受晚到首次可见覆盖。"""
+    app_date = r.get("application_date")
+    if isinstance(app_date, (pd.Timestamp, datetime)):
+        return app_date.date()
+    if isinstance(app_date, date):
+        return app_date
+    # 回退到 apply_time（首次可见日期，对老数据兼容）
+    apply_t = r.get("apply_time")
+    if isinstance(apply_t, (pd.Timestamp, datetime)):
+        return apply_t.date()
+    if isinstance(apply_t, date):
+        return apply_t
+    return None
+
+
 def _proposed_this_month(emp: pd.DataFrame, res: pd.DataFrame, report_date):
     """Row31：本月主动离职申请 + LWD 在本月 + 流程未拒。"""
     roster = []
@@ -618,8 +646,7 @@ def _proposed_this_month(emp: pd.DataFrame, res: pd.DataFrame, report_date):
                 continue
             if status in C.get_process_status_rejected():
                 continue
-            apply_t = r.get("apply_time")
-            ad = apply_t.date() if hasattr(apply_t, "date") else None
+            ad = _apply_date(r)
             lwd = r.get("last_working_day")
             lwd = lwd if isinstance(lwd, date) else None
             if not same_month(ad, report_date):
@@ -650,8 +677,7 @@ def _proposed_last_month_leave_this_month(
             status = str(r.get("process_status") or "")
             if status in C.get_process_status_rejected():
                 continue
-            apply_t = r.get("apply_time")
-            ad = apply_t.date() if hasattr(apply_t, "date") else None
+            ad = _apply_date(r)
             lwd = r.get("last_working_day")
             lwd = lwd if isinstance(lwd, date) else None
             if (

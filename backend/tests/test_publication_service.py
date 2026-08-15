@@ -1,5 +1,6 @@
 """Publication writes verified artifacts and compatibility projections atomically."""
 
+from dataclasses import replace
 from datetime import date, datetime
 from pathlib import Path
 
@@ -206,7 +207,7 @@ def test_weekly_publish_reloads_excel_and_updates_projection(db, tmp_path):
     assert Path(excel.protected_path).is_file()
 
 
-def test_republishing_same_run_is_rejected_before_staging(db, tmp_path):
+def test_republishing_identical_snapshot_is_idempotent(db, tmp_path):
     run = make_run(db, date(2026, 7, 10))
     bundle = make_weekly_bundle()
     period = (date(2026, 7, 6), date(2026, 7, 10))
@@ -218,7 +219,7 @@ def test_republishing_same_run_is_rejected_before_staging(db, tmp_path):
         week_start=period[0],
         week_end=period[1],
     )
-    publish(
+    first_report = publish(
         db,
         run.id,
         ["weekly"],
@@ -226,8 +227,61 @@ def test_republishing_same_run_is_rejected_before_staging(db, tmp_path):
         bundles={"weekly": bundle},
         periods={"weekly": period},
         output_dir=tmp_path,
+    )[0]
+    attempt_count = db.scalar(select(func.count()).select_from(PublicationAttempt))
+
+    repeated_report = publish(
+        db,
+        run.id,
+        ["weekly"],
+        "local-operator",
+        bundles={"weekly": bundle},
+        periods={"weekly": period},
+        output_dir=tmp_path,
+    )[0]
+
+    assert repeated_report.id == first_report.id
+    assert db.scalar(select(func.count()).select_from(PublicationAttempt)) == attempt_count
+
+
+def test_republishing_changed_snapshot_requires_revision_run(db, tmp_path):
+    run = make_run(db, date(2026, 7, 10))
+    original = make_weekly_bundle()
+    period = (date(2026, 7, 6), date(2026, 7, 10))
+    build_preview(
+        db,
+        run.id,
+        "weekly",
+        bundle=original,
+        week_start=period[0],
+        week_end=period[1],
+    )
+    publish(
+        db,
+        run.id,
+        ["weekly"],
+        "local-operator",
+        bundles={"weekly": original},
+        periods={"weekly": period},
+        output_dir=tmp_path,
     )
     attempt_count = db.scalar(select(func.count()).select_from(PublicationAttempt))
+    changed = replace(
+        original,
+        daily_reconciliation={
+            **dict(original.daily_reconciliation),
+            "joiners": 1,
+        },
+    )
+    build_preview(
+        db,
+        run.id,
+        "weekly",
+        bundle=changed,
+        week_start=period[0],
+        week_end=period[1],
+        reuse_published_snapshot=False,
+    )
 
     with pytest.raises(PublicationFailed, match="create a revision"):
         publish(
@@ -235,7 +289,7 @@ def test_republishing_same_run_is_rejected_before_staging(db, tmp_path):
             run.id,
             ["weekly"],
             "local-operator",
-            bundles={"weekly": bundle},
+            bundles={"weekly": changed},
             periods={"weekly": period},
             output_dir=tmp_path,
         )

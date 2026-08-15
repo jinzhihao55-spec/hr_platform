@@ -301,7 +301,7 @@ def test_published_daily_preview_can_recalculate_without_mutating_snapshot(db):
     assert report.snapshot_json == original.snapshot_json
     assert report.snapshot_hash == original.snapshot_hash
     assert target.status == TargetStatus.published.value
-    assert target.preview_hash == original.snapshot_hash
+    assert target.preview_hash == recalculated.snapshot_hash
     assert target.validation_summary == original_target_summary
 
 
